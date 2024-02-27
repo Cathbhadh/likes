@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import numpy as np
+import time
 
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
