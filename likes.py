@@ -17,34 +17,34 @@ if access_token:
     jar.set("access_token", access_token)
     session.cookies = jar
 
-    def load_data():
-        offset = 0
-        while True:
-            resp = session.get(url, params={"offset": offset, "limit": limit})
-            data = resp.json()
+def load_data():
+    offset = 0
+    while True:
+        resp = session.get(url, params={"offset": offset, "limit": limit})
+        data = resp.json()
 
-            for notification in data.get("notifications", []):
-                if notification["action"] == "liked":
-                    name = notification["user_profile"]["name"]
-                    post_id = notification["post"]["id"]
+        for notification in data.get("notifications", []):
+            if notification["action"] == "liked":
+                name = notification["user_profile"]["name"]
+                resource_uuid = notification["resource_uuid"]
 
-                    if name not in user_likes:
-                        user_likes[name] = set()
+                if name not in user_likes:
+                    user_likes[name] = set()
 
-                    user_likes[name].add(post_id)
+                user_likes[name].add(resource_uuid)
 
-                if notification["action"] == "commented":
-                    name = notification["user_profile"]["name"]
+            if notification["action"] == "commented":
+                name = notification["user_profile"]["name"]
 
-                    if name not in user_comments:
-                        user_comments[name] = 0
+                if name not in user_comments:
+                    user_comments[name] = 0
 
-                    user_comments[name] += 1
+                user_comments[name] += 1
 
-            if len(data.get("notifications", [])) < limit:
-                break
+        if len(data.get("notifications", [])) < limit:
+            break
 
-            offset += limit
+        offset += limit
 
     if st.button("Load Data"):
         load_data()
