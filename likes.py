@@ -37,12 +37,15 @@ def load_data(session):
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT}, headers={"Accept-Encoding": "gzip"})
         
         if resp.headers.get('Content-Encoding') == 'gzip':
-            # Decompress the response content if it is gzip-encoded
-            content = gzip.decompress(resp.content)
+            try:
+                # Attempt to decompress the response content if it is gzip-encoded
+                with gzip.GzipFile(fileobj=BytesIO(resp.content), mode='rb') as f:
+                    data = json.load(f)
+            except gzip.BadGzipFile:
+                # Handle the case where the response is not actually gzip-encoded
+                data = resp.json()
         else:
-            content = resp.content
-
-        data = resp.json()
+            data = resp.json()
 
         for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
