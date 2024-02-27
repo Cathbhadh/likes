@@ -24,7 +24,7 @@ if access_token:
             data = resp.json()
     
             for notification in data.get("notifications", []):
-                if notification["action"] == "liked":
+                if notification["action"] == "liked" and notification.get("resource_media"):
                     name = notification["user_profile"]["name"]
                     resource_uuid = notification["resource_uuid"]
     
@@ -45,6 +45,7 @@ if access_token:
                 break
     
             offset += limit
+
 
     if st.button("Load Data"):
         load_data()
