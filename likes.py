@@ -110,7 +110,8 @@ def main():
                 resource_comments_df = pd.DataFrame(
                     list(resource_comments.items()), columns=["Resource UUID", "Comments"]
                 )
-                st.dataframe(resource_comments_df.sort_values(by="Comments", ascending=False))
+                resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
+                st.dataframe(resource_comments_df)
 
                 most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
                 most_comments_count = resource_comments_df.iloc[0]["Comments"]
@@ -124,7 +125,8 @@ def main():
                 resource_collected_df = pd.DataFrame(
                     list(resource_collected.items()), columns=["Resource UUID", "Collected"]
                 )
-                st.dataframe(resource_collected_df.sort_values(by="Collected", ascending=False))
+                resource_collected_df = resource_collected_df.sort_values(by="Collected", ascending=False)
+                st.dataframe(resource_collected_df)
 
                 most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
