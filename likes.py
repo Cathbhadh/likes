@@ -17,7 +17,7 @@ def process_liked_notification(notification, user_likes_df):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
-    user_likes_df = user_likes_df.append({"User": name, "Likes": resource_uuid}, ignore_index=True)
+    user_likes_df = pd.concat([user_likes_df, pd.DataFrame({"User": [name], "Likes": [resource_uuid]})], ignore_index=True)
     return user_likes_df
 
 def process_commented_notification(notification, user_comments_df):
