@@ -28,13 +28,11 @@ def process_commented_notification(notification, user_comments, resource_comment
 
     user_comments[name] = user_comments.get(name, 0) + 1
 
-    # Track the number of comments for each resource_uuid
     resource_uuid = notification["resource_uuid"]
     resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
 
 def process_collected_notification(notification, resource_collected):
-    # Track the number of "collected" actions for each resource_uuid
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] = resource_collected.get(resource_uuid, 0) + 1
 
@@ -150,7 +148,7 @@ def main():
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
-                
+
                 st.subheader("User Interaction Statistics:")
                 st.write(f"Number of Users who Liked: {len(user_likes)}")
                 st.write(f"Number of Users who Commented: {len(user_comments)}")
@@ -172,19 +170,21 @@ def main():
             with col5:
                 st.subheader("Likes Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_likes):
-                    st.write(f"{percentile}th percentile: {value}")
+                    rounded_value = round(value, 2)
+                    st.write(f"{percentile}th percentile: {rounded_value}")
 
             with col6:
                 st.subheader("Comments Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_comments):
-                    st.write(f"{percentile}th percentile: {value}")
+                    rounded_value = round(value, 2)
+                    st.write(f"{percentile}th percentile: {rounded_value}")
 
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
 
     else:
-        st.warning("Please enter your access token")
+        st.warning("Enter your access token:")
 
 
 if __name__ == "__main__":
