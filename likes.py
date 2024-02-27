@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import pandas as pd
 import numpy as np
-import time
 
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
@@ -14,23 +13,21 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-def process_liked_notification(notification, user_likes_df):
+def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
-    user_likes_df = pd.concat([user_likes_df, pd.DataFrame({"User": [name], "Likes": [resource_uuid]})], ignore_index=True)
-    return user_likes_df
+    user_likes.setdefault(name, set()).add(resource_uuid)
 
-def process_commented_notification(notification, user_comments_df):
+def process_commented_notification(notification, user_comments):
     name = notification["user_profile"]["name"]
 
-    user_comments_df.loc[name] = user_comments_df.get(name, 0) + 1
-    return user_comments_df
+    user_comments[name] = user_comments.get(name, 0) + 1
 
 def load_data(session):
     offset = 0
-    user_likes_df = pd.DataFrame(columns=["User", "Likes"])
-    user_comments_df = pd.DataFrame(columns=["User", "Comments"])
+    user_likes = {}
+    user_comments = {}
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -38,17 +35,17 @@ def load_data(session):
 
         for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
-                user_likes_df = process_liked_notification(notification, user_likes_df)
+                process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
-                user_comments_df = process_commented_notification(notification, user_comments_df)
+                process_commented_notification(notification, user_comments)
 
         if len(data.get("notifications", [])) < LIMIT:
             break
 
         offset += LIMIT
 
-    return user_likes_df, user_comments_df
+    return user_likes, user_comments
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -58,10 +55,10 @@ def main():
 
         if st.button("Load Data"):
             start_time = time.perf_counter()
-            user_likes_df, user_comments_df = load_data(session)
+            user_likes, user_comments = load_data(session)
 
-            total_likes = user_likes_df.groupby("User")["Likes"].nunique().sum()
-            total_comments = user_comments_df["Comments"].sum()
+            total_likes = sum(len(posts) for posts in user_likes.values())
+            total_comments = sum(user_comments.values())
 
             st.subheader("Total Likes and Comments")
             st.write(f"Total Likes: {total_likes}")
@@ -71,20 +68,22 @@ def main():
 
             with col1:
                 st.subheader("Likes by user:")
-                st.dataframe(user_likes_df["User"].value_counts().reset_index().rename(columns={"index": "User", "User": "Likes"}))
+                likes_df = pd.DataFrame({"User": list(user_likes.keys()), "Likes": [len(posts) for posts in user_likes.values()]})
+                st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
                 st.subheader("Comments by user:")
-                st.dataframe(user_comments_df)
+                comments_df = pd.DataFrame(list(user_comments.items()), columns=["User", "Comments"])
+                st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
-            average_likes_per_user = total_likes / len(user_likes_df["User"].unique())
+            average_likes_per_user = total_likes / len(user_likes)
             st.subheader("Average Likes per User")
             st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
 
             st.subheader("Percentile:")
             percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-            percentiles_values_likes = np.percentile(user_likes_df.groupby("User")["Likes"].nunique(), percentiles)
-            percentiles_values_comments = np.percentile(user_comments_df["Comments"], percentiles)
+            percentiles_values_likes = np.percentile(likes_df['Likes'], percentiles)
+            percentiles_values_comments = np.percentile(comments_df['Comments'], percentiles)
 
             col1, col2 = st.columns(2)
 
@@ -100,6 +99,7 @@ def main():
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
+
     else:
         st.warning("Please enter your access token")
 
