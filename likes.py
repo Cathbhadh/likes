@@ -23,16 +23,19 @@ def process_liked_notification(notification, user_likes):
     user_likes.setdefault(name, set()).add(resource_uuid)
 
 
-def process_commented_notification(notification, user_comments):
+def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
+    resource_uuid = notification["resource_uuid"]
 
     user_comments[name] = user_comments.get(name, 0) + 1
+    resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
 
 def load_data(session):
     offset = 0
     user_likes = {}
     user_comments = {}
+    resource_comments = {}
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -43,14 +46,14 @@ def load_data(session):
                 process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
-                process_commented_notification(notification, user_comments)
+                process_commented_notification(notification, user_comments, resource_comments)
 
         if len(data.get("notifications", [])) < LIMIT:
             break
 
         offset += LIMIT
 
-    return user_likes, user_comments
+    return user_likes, user_comments, resource_comments
 
 
 def main():
@@ -61,7 +64,7 @@ def main():
 
         if st.button("Load Data"):
             start_time = time.perf_counter()
-            user_likes, user_comments = load_data(session)
+            user_likes, user_comments, resource_comments = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
             total_comments = sum(user_comments.values())
@@ -111,6 +114,10 @@ def main():
                 st.subheader("Comments Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     st.write(f"{percentile}th percentile: {value}")
+
+            max_comments_resource_uuid = max(resource_comments, key=resource_comments.get)
+            st.write(f"Resource UUID with the most comments: {max_comments_resource_uuid}")
+
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
