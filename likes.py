@@ -26,7 +26,7 @@ def load_data():
     while True:
         params = {"offset": offset, "limit": limit}
         resp = session.get(url, params=params)
-        data = json.loads(resp.text)    
+        data = resp.json() 
 
         for notification in data["notifications"]:
             if notification["action"] == "liked":
