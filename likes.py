@@ -74,6 +74,9 @@ def main():
     if access_token:
         session = authenticate_with_token(access_token)
 
+        # New input field for specifying the number of people
+        num_people = st.number_input("Specify the number of people", min_value=1)
+
         if st.button("Load Data"):
             start_time = time.perf_counter()
             (
@@ -178,6 +181,11 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
+
+            # Calculate the percentage of total likes for specified number of people
+            percentage_likes = (num_people / len(user_likes)) * 100
+            st.subheader(f"{num_people} People Liked:")
+            st.write(f"{percentage_likes:.2f}% of Total Likes")
 
             end_time = time.perf_counter()
             execution_time = end_time - start_time
