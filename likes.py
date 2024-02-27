@@ -8,11 +8,13 @@ limit = 500
 
 # Allow users to input their own access token and session UUID
 access_token = st.text_input("Enter your access token")
+session_uuid = st.text_input("Enter your session UUID")
 
-if access_token:
+if access_token and session_uuid:
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
     jar.set("access_token", access_token)
+    jar.set("session_uuid", session_uuid)
     session.cookies = jar
 
     def load_data():
@@ -46,8 +48,8 @@ if access_token:
         df_likes = df_counts[df_counts['Action'] == 'liked']
         df_comments = df_counts[df_counts['Action'] == 'commented']
 
-        total_likes = len(df_likes)
-        total_comments = len(df_comments)
+        total_likes = df_likes['Count'].sum()
+        total_comments = df_comments['Count'].sum()
 
         st.subheader("Total Likes and Comments")
         st.write(f"Total Likes: {total_likes}")
@@ -55,10 +57,10 @@ if access_token:
 
         # Display top liked and commented posts
         st.subheader("Top Liked Posts")
-        st.table(df_likes.sort_values(by='Count', ascending=False))
+        st.table(df_likes.sort_values(by='Count', ascending=False).head(5))
 
         st.subheader("Top Commented Posts")
-        st.table(df_comments.sort_values(by='Count', ascending=False))
+        st.table(df_comments.sort_values(by='Count', ascending=False).head(5))
 
         # Calculate and display average likes per user
         average_likes_per_user = total_likes / len(df_likes['User'].unique())
