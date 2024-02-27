@@ -55,7 +55,9 @@ def load_data(session):
                 process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
-                process_commented_notification(notification, user_comments, resource_comments)
+                process_commented_notification(
+                    notification, user_comments, resource_comments
+                )
 
             if notification["action"] == "collected":
                 process_collected_notification(notification, resource_collected)
@@ -76,7 +78,12 @@ def main():
 
         if st.button("Load Data"):
             start_time = time.perf_counter()
-            user_likes, user_comments, resource_comments, resource_collected = load_data(session)
+            (
+                user_likes,
+                user_comments,
+                resource_comments,
+                resource_collected,
+            ) = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
             total_comments = sum(user_comments.values())
@@ -108,31 +115,46 @@ def main():
             with col3:
                 st.subheader("Comments by resource_uuid:")
                 resource_comments_df = pd.DataFrame(
-                    list(resource_comments.items()), columns=["Resource UUID", "Comments"]
+                    list(resource_comments.items()),
+                    columns=["Resource UUID", "Comments"],
                 )
-                resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
+                resource_comments_df = resource_comments_df.sort_values(
+                    by="Comments", ascending=False
+                )
                 st.dataframe(resource_comments_df)
 
-                most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
+                most_commented_resource_uuid = resource_comments_df.iloc[0][
+                    "Resource UUID"
+                ]
                 most_comments_count = resource_comments_df.iloc[0]["Comments"]
-                st.subheader("Most Commented Resource UUID:")
-                st.write(f"Resource UUID: {most_commented_resource_uuid}")
+                st.subheader("Most Commented Post:")
+                st.write(f"Post ID: {most_commented_resource_uuid}")
                 st.write(f"Number of Comments: {most_comments_count}")
 
             col4 = st.columns(1)[0]
             with col4:
                 st.subheader("Collected by resource_uuid:")
                 resource_collected_df = pd.DataFrame(
-                    list(resource_collected.items()), columns=["Resource UUID", "Collected"]
+                    list(resource_collected.items()),
+                    columns=["Resource UUID", "Collected"],
                 )
-                resource_collected_df = resource_collected_df.sort_values(by="Collected", ascending=False)
+                resource_collected_df = resource_collected_df.sort_values(
+                    by="Collected", ascending=False
+                )
                 st.dataframe(resource_collected_df)
 
-                most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
+                most_collected_resource_uuid = resource_collected_df.iloc[0][
+                    "Resource UUID"
+                ]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
-                st.subheader("Most Collected Resource UUID:")
-                st.write(f"Resource UUID: {most_collected_resource_uuid}")
+                st.subheader("Most Collected Post:")
+                st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
+                
+                st.subheader("User Interaction Statistics:")
+                st.write(f"Number of Users who Liked: {len(user_likes)}")
+                st.write(f"Number of Users who Commented: {len(user_comments)}")
+                st.write(f"Number of Users who Collected: {len(resource_collected)}")
 
             average_likes_per_user = total_likes / len(user_likes)
             st.subheader("Average Likes per User")
