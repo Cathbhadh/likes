@@ -61,10 +61,12 @@ if access_token:
 
         # Display top liked and commented posts
         st.subheader("Top Liked Posts")
-        st.table(df_likes.sort_values(by='Likes', ascending=False))
+        with st.beta_expander("Show Top Liked Posts"):
+            st.dataframe(df_likes.sort_values(by='Likes', ascending=False))
 
         st.subheader("Top Commented Posts")
-        st.table(df_comments.sort_values(by='Comments', ascending=False))
+        with st.beta_expander("Show Top Commented Posts"):
+            st.dataframe(df_comments.sort_values(by='Comments', ascending=False))
 
         # Calculate and display average likes per user
         average_likes_per_user = total_likes / len(df_likes)
