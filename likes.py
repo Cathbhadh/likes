@@ -7,6 +7,7 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
+
 def authenticate_with_token(access_token):
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
@@ -14,16 +15,19 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
+
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
     user_likes.setdefault(name, set()).add(resource_uuid)
 
+
 def process_commented_notification(notification, user_comments):
     name = notification["user_profile"]["name"]
 
     user_comments[name] = user_comments.get(name, 0) + 1
+
 
 def load_data(session):
     offset = 0
@@ -48,6 +52,7 @@ def load_data(session):
 
     return user_likes, user_comments
 
+
 def main():
     access_token = st.text_input("Enter your access token")
 
@@ -69,12 +74,19 @@ def main():
 
             with col1:
                 st.subheader("Likes by user:")
-                likes_df = pd.DataFrame({"User": list(user_likes.keys()), "Likes": [len(posts) for posts in user_likes.values()]})
+                likes_df = pd.DataFrame(
+                    {
+                        "User": list(user_likes.keys()),
+                        "Likes": [len(posts) for posts in user_likes.values()],
+                    }
+                )
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
                 st.subheader("Comments by user:")
-                comments_df = pd.DataFrame(list(user_comments.items()), columns=["User", "Comments"])
+                comments_df = pd.DataFrame(
+                    list(user_comments.items()), columns=["User", "Comments"]
+                )
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             average_likes_per_user = total_likes / len(user_likes)
@@ -83,8 +95,10 @@ def main():
 
             st.subheader("Percentile:")
             percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-            percentiles_values_likes = np.percentile(likes_df['Likes'], percentiles)
-            percentiles_values_comments = np.percentile(comments_df['Comments'], percentiles)
+            percentiles_values_likes = np.percentile(likes_df["Likes"], percentiles)
+            percentiles_values_comments = np.percentile(
+                comments_df["Comments"], percentiles
+            )
 
             col1, col2 = st.columns(2)
 
@@ -103,6 +117,7 @@ def main():
 
     else:
         st.warning("Please enter your access token")
+
 
 if __name__ == "__main__":
     main()
