@@ -96,23 +96,23 @@ def main():
                 st.subheader("Likes by user:")
                 likes_df = pd.DataFrame(
                     {
-                        "User": list(user_likes.keys()),
+                        "User": [f"[{name}](https://yodayo.com/1/users/{actor_uuid}/)" for name, actor_uuid in user_likes.items()],
                         "Likes": [len(posts) for posts in user_likes.values()],
-                        "Profile Link": [f"[User Profile](https://yodayo.com/1/users/{user_id}/)" for user_id in user_likes.keys()]
                     }
                 )
-                st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
+                st.dataframe(likes_df.sort_values(by="Likes", ascending=False), unsafe_allow_html=True)
 
             with col2:
                 st.subheader("Comments by user:")
                 comments_df = pd.DataFrame(
                     {
-                        "User": list(user_comments.keys()),
+                        "User": [f"[{name}](https://yodayo.com/1/users/{actor_uuid}/)" for name, actor_uuid in user_comments.items()],
                         "Comments": list(user_comments.values()),
-                        "Profile Link": [f"[User Profile](https://yodayo.com/1/users/{user_id}/)" for user_id in user_comments.keys()]
                     }
                 )
-                st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
+                st.dataframe(comments_df.sort_values(by="Comments", ascending=False), unsafe_allow_html=True)
+
+
 
             col3 = st.columns(1)[0]
             with col3:
