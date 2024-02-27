@@ -11,13 +11,11 @@ user_comments = {}
 
 # Allow users to input their own access token and session UUID
 access_token = st.text_input("Enter your access token")
-session_uuid = st.text_input("Enter your session UUID")
 
-if access_token and session_uuid:
+if access_token:
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
     jar.set("access_token", access_token)
-    jar.set("session_uuid", session_uuid)
     session.cookies = jar
 
     def load_data():
@@ -31,10 +29,12 @@ if access_token and session_uuid:
                     name = notification["user_profile"]["name"]
                     resource_uuid = notification["resource_uuid"]
 
-                    if (name, resource_uuid) not in user_likes:
-                        user_likes[(name, resource_uuid)] = 0
+                    # Keep track of unique combinations of user and resource UUID for likes
+                    unique_key = (name, resource_uuid)
+                    if unique_key not in user_likes:
+                        user_likes[unique_key] = 0
 
-                    user_likes[(name, resource_uuid)] += 1
+                    user_likes[unique_key] += 1
 
                 if notification["action"] == "commented":
                     name = notification["user_profile"]["name"]
@@ -60,10 +60,6 @@ if access_token and session_uuid:
         # Split User_Resource column into User and Resource_UUID columns
         df_likes[['User', 'Resource_UUID']] = pd.DataFrame(df_likes['User_Resource'].tolist(), index=df_likes.index)
         df_comments[['User', 'Resource_UUID']] = pd.DataFrame(df_comments['User_Resource'].tolist(), index=df_comments.index)
-
-        # Drop duplicates based on User and Resource_UUID
-        df_likes = df_likes.drop_duplicates(subset=['User', 'Resource_UUID'])
-        df_comments = df_comments.drop_duplicates(subset=['User', 'Resource_UUID'])
 
         total_likes = df_likes['Likes'].sum()
         total_comments = df_comments['Comments'].sum()
