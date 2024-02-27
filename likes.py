@@ -92,19 +92,22 @@ def main():
 
             col1, col2 = st.columns(2)
 
-
             with col1:
                 st.subheader("Likes by user:")
-                likes_df["User"] = likes_df["User"].apply(lambda x: f'<a href="{x}">{x}</a>')
-                st.table(likes_df.sort_values(by="Likes", ascending=False), unsafe_allow_html=True)
+                likes_df = pd.DataFrame(
+                    {
+                        "User": list(user_likes.keys()),
+                        "Likes": [len(posts) for posts in user_likes.values()],
+                    }
+                )
+                st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
                 st.subheader("Comments by user:")
-                comments_df["User"] = comments_df["User"].apply(lambda x: f'<a href="{x}">{x}</a>')
-                st.table(comments_df.sort_values(by="Comments", ascending=False), unsafe_allow_html=True)
-
-
-
+                comments_df = pd.DataFrame(
+                    list(user_comments.items()), columns=["User", "Comments"]
+                )
+                st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             col3 = st.columns(1)[0]
             with col3:
