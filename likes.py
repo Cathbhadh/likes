@@ -35,8 +35,9 @@ def load_data(session):
     user_comments = {}
 
     while True:
-        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT}, headers={"Accept-Encoding": "gzip"})
-        
+        headers = {"Accept-Encoding": "gzip"}
+        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT}, headers=headers)
+
         if resp.headers.get('Content-Encoding') == 'gzip':
             try:
                 # Attempt to decompress the response content if it is gzip-encoded
@@ -61,6 +62,7 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments
+
 
 
 def main():
