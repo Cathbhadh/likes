@@ -3,6 +3,9 @@ import requests
 import pandas as pd
 import numpy as np
 import time
+import gzip
+from io import BytesIO
+
 
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
@@ -31,7 +34,14 @@ def load_data(session):
     user_comments = {}
 
     while True:
-        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT}, headers={"Accept-Encoding": "gzip"})
+        
+        if resp.headers.get('Content-Encoding') == 'gzip':
+            # Decompress the response content if it is gzip-encoded
+            content = gzip.decompress(resp.content)
+        else:
+            content = resp.content
+
         data = resp.json()
 
         for notification in data.get("notifications", []):
@@ -47,6 +57,7 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments
+
 
 def main():
     access_token = st.text_input("Enter your access token")
