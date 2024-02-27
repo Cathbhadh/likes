@@ -98,6 +98,7 @@ def main():
                     {
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
+                        "Profile Link": [f"[User Profile](https://yodayo.com/1/users/{user_id}/)" for user_id in user_likes.keys()]
                     }
                 )
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
@@ -105,7 +106,11 @@ def main():
             with col2:
                 st.subheader("Comments by user:")
                 comments_df = pd.DataFrame(
-                    list(user_comments.items()), columns=["User", "Comments"]
+                    {
+                        "User": list(user_comments.keys()),
+                        "Comments": list(user_comments.values()),
+                        "Profile Link": [f"[User Profile](https://yodayo.com/1/users/{user_id}/)" for user_id in user_comments.keys()]
+                    }
                 )
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
