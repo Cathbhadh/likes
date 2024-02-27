@@ -59,22 +59,23 @@ if access_token:
         st.write(f"Total Likes: {total_likes}")
         st.write(f"Total Comments: {total_comments}")
 
-        # Display top liked and commented posts
-        st.subheader("Top Liked Posts")
-        st.dataframe(df_likes.sort_values(by='Likes', ascending=False))
+        col1, col2 = st.columns(2)
 
-        st.subheader("Top Commented Posts")
-        st.dataframe(df_comments.sort_values(by='Comments', ascending=False))
+        with col1:
+            st.subheader("Likes by user:")
+            st.dataframe(df_likes.sort_values(by='Likes', ascending=False))
 
-        # Calculate and display average likes per user
+        with col2:
+            st.subheader("Comments by user:")
+            st.dataframe(df_comments.sort_values(by='Comments', ascending=False))
+
+
         average_likes_per_user = total_likes / len(df_likes)
         st.subheader("Average Likes per User")
         st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
 
-        # User Percentile Analysis
         st.subheader("User Percentile Analysis")
 
-        # Calculate percentiles
         percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         percentiles_values_likes = np.percentile(df_likes['Likes'], percentiles)
         percentiles_values_comments = np.percentile(df_comments['Comments'], percentiles)
