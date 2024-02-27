@@ -5,6 +5,7 @@ import numpy as np
 import time
 import gzip
 from io import BytesIO
+import json
 
 
 API_URL = "https://api.yodayo.com/v1/notifications"
