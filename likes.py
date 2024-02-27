@@ -58,7 +58,6 @@ def main():
 
         if st.button("Load Data"):
             start_time = time.perf_counter()
-            stats_calc = StatsCalculator()
             load_data(session)
 
             df_likes = pd.DataFrame(
