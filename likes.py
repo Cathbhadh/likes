@@ -30,16 +30,17 @@ if access_token and session_uuid:
             for notification in data["notifications"]:  
                 if notification["action"] == "liked":
                     # Tally likes
-                
+                    pass  # Replace "pass" with the code for likes
+
                 if notification["action"] == "commented":
                     # Tally comments
-           
-                if len(data["notifications"]) < limit:
-                    break
+                    pass  # Replace "pass" with the code for comments
+
+            if len(data["notifications"]) < limit:
+                break
                 
             offset += limit
             
-    
     if st.button("Load Data"):
         load_data() 
         
@@ -54,7 +55,7 @@ if access_token and session_uuid:
         for name, comments in sorted_comments:
             st.write(f"{name}: {comments}")
             
-else:
-    st.warning("Please enter access token and session UUID")
+    else:
+        st.warning("Please enter access token and session UUID")
     
-st.write("Data will load after clicking button")
+    st.write("Data will load after clicking the button")
