@@ -1,7 +1,5 @@
 import streamlit as st
 import requests 
-import json
-
 st.title("User Likes")
 
 url = "https://api.yodayo.com/v1/notifications"  
