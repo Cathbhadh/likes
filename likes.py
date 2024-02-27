@@ -25,7 +25,7 @@ if access_token and session_uuid:
         while True:
             resp = session.get(url, params={"offset": offset, "limit": limit})
             data = resp.json()
-    
+
             # Access notifications list 
             for notification in data["notifications"]:  
                 if notification["action"] == "liked":
