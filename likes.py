@@ -21,24 +21,19 @@ if access_token and session_uuid:
     session.cookies = jar
 
     def load_data():
-        offset = 0 
+        offset = 0
         while True:
             resp = session.get(url, params={"offset": offset, "limit": limit})
             data = resp.json()
     
-            for notification in data["notifications"]:
+            # Access notifications list 
+            for notification in data["notifications"]:  
                 if notification["action"] == "liked":
-                    name = notification["user_profile"]["name"]
-                    if name not in user_likes:
-                        user_likes[name] = 0
-                    user_likes[name] += 1
-                    
+                    # Tally likes
+                
                 if notification["action"] == "commented":
-                    name = notification["user_profile"]["name"]
-                    if name not in user_comments:
-                        user_comments[name] = 0
-                    user_comments[name] += 1
-    
+                    # Tally comments
+           
             if len(data["notifications"]) < limit:
                 break
                 
