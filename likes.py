@@ -9,12 +9,15 @@ limit = 500
 user_likes = {}
 user_comments = {}
 
+# Allow users to input their own access token and session UUID
 access_token = st.text_input("Enter your access token")
+session_uuid = st.text_input("Enter your session UUID")
 
-if access_token:
+if access_token and session_uuid:
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
     jar.set("access_token", access_token)
+    jar.set("session_uuid", session_uuid)
     session.cookies = jar
 
     def load_data():
@@ -26,19 +29,21 @@ if access_token:
             for notification in data.get("notifications", []):
                 if notification["action"] == "liked":
                     name = notification["user_profile"]["name"]
+                    resource_uuid = notification["resource_uuid"]
 
-                    if name not in user_likes:
-                        user_likes[name] = 0
+                    if (name, resource_uuid) not in user_likes:
+                        user_likes[(name, resource_uuid)] = 0
 
-                    user_likes[name] += 1
+                    user_likes[(name, resource_uuid)] += 1
 
                 if notification["action"] == "commented":
                     name = notification["user_profile"]["name"]
+                    resource_uuid = notification["resource_uuid"]
 
-                    if name not in user_comments:
-                        user_comments[name] = 0
+                    if (name, resource_uuid) not in user_comments:
+                        user_comments[(name, resource_uuid)] = 0
 
-                    user_comments[name] += 1
+                    user_comments[(name, resource_uuid)] += 1
 
             if len(data.get("notifications", [])) < limit:
                 break
@@ -49,8 +54,16 @@ if access_token:
         load_data()
 
         # Convert dictionaries to pandas dataframes
-        df_likes = pd.DataFrame(list(user_likes.items()), columns=['User', 'Likes'])
-        df_comments = pd.DataFrame(list(user_comments.items()), columns=['User', 'Comments'])
+        df_likes = pd.DataFrame(list(user_likes.items()), columns=['User_Resource', 'Likes'])
+        df_comments = pd.DataFrame(list(user_comments.items()), columns=['User_Resource', 'Comments'])
+
+        # Split User_Resource column into User and Resource_UUID columns
+        df_likes[['User', 'Resource_UUID']] = pd.DataFrame(df_likes['User_Resource'].tolist(), index=df_likes.index)
+        df_comments[['User', 'Resource_UUID']] = pd.DataFrame(df_comments['User_Resource'].tolist(), index=df_comments.index)
+
+        # Drop duplicates based on User and Resource_UUID
+        df_likes = df_likes.drop_duplicates(subset=['User', 'Resource_UUID'])
+        df_comments = df_comments.drop_duplicates(subset=['User', 'Resource_UUID'])
 
         total_likes = df_likes['Likes'].sum()
         total_comments = df_comments['Comments'].sum()
@@ -61,10 +74,10 @@ if access_token:
 
         # Display top liked and commented posts
         st.subheader("Top Liked Posts")
-        st.table(df_likes.sort_values(by='Likes', ascending=False).head(5))
+        st.table(df_likes.sort_values(by='Likes', ascending=False).head(5)[['User', 'Resource_UUID', 'Likes']])
 
         st.subheader("Top Commented Posts")
-        st.table(df_comments.sort_values(by='Comments', ascending=False).head(5))
+        st.table(df_comments.sort_values(by='Comments', ascending=False).head(5)[['User', 'Resource_UUID', 'Comments']])
 
         # Calculate and display average likes per user
         average_likes_per_user = total_likes / len(df_likes)
@@ -86,4 +99,4 @@ if access_token:
             st.write(f"{percentile}th percentile Comments: {value}")
 
 else:
-    st.warning("Please enter your access token")
+    st.warning("Please enter your access token and session UUID")
