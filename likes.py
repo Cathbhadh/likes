@@ -26,11 +26,12 @@ if access_token:
             for notification in data.get("notifications", []):
                 if notification["action"] == "liked":
                     name = notification["user_profile"]["name"]
+                    post_id = notification["post"]["id"]
 
                     if name not in user_likes:
-                        user_likes[name] = 0
+                        user_likes[name] = set()
 
-                    user_likes[name] += 1
+                    user_likes[name].add(post_id)
 
                 if notification["action"] == "commented":
                     name = notification["user_profile"]["name"]
@@ -48,7 +49,10 @@ if access_token:
     if st.button("Load Data"):
         load_data()
 
-        df_likes = pd.DataFrame(list(user_likes.items()), columns=["User", "Likes"])
+        # Count the number of unique liked posts for each user
+        likes_counts = {name: len(posts) for name, posts in user_likes.items()}
+        df_likes = pd.DataFrame(list(likes_counts.items()), columns=["User", "Likes"])
+
         df_comments = pd.DataFrame(
             list(user_comments.items()), columns=["User", "Comments"]
         )
@@ -90,7 +94,6 @@ if access_token:
             st.subheader("Comments Percentiles")
             for percentile, value in zip(percentiles, percentiles_values_comments):
                 st.write(f"{percentile}th percentile: {value}")
-
 
 else:
     st.warning("Please enter your access token")
