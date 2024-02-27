@@ -7,6 +7,15 @@ url = "https://api.yodayo.com/v1/notifications"
 
 limit = 500
 user_likes = {}
+secrets = st.secrets["secrets"]
+access_token = secrets["access_token"] 
+session_uuid = secrets["session_uuid"]
+
+session = requests.Session()
+jar = requests.cookies.RequestsCookieJar()
+jar.set("access_token", access_token)  
+jar.set("session_uuid", session_uuid)
+session.cookies = jar
 
 def load_data():
     offset = 0
