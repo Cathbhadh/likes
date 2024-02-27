@@ -25,32 +25,26 @@ def process_commented_notification(notification, user_comments):
 
     user_comments[name] = user_comments.get(name, 0) + 1
 
-def load_data(session, batch_size=5):
+def load_data(session):
     offset = 0
     user_likes = {}
     user_comments = {}
 
     while True:
-        batch_offsets = [offset + i * LIMIT for i in range(batch_size)]
-        batch_responses = []
+        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        data = resp.json()
 
-        for batch_offset in batch_offsets:
-            resp = session.get(API_URL, params={"offset": batch_offset, "limit": LIMIT})
-            data = resp.json()
-            batch_responses.append(data)
+        for notification in data.get("notifications", []):
+            if notification["action"] == "liked" and notification.get("resource_media"):
+                process_liked_notification(notification, user_likes)
 
-        for batch_data in batch_responses:
-            for notification in batch_data.get("notifications", []):
-                if notification["action"] == "liked" and notification.get("resource_media"):
-                    process_liked_notification(notification, user_likes)
+            if notification["action"] == "commented":
+                process_commented_notification(notification, user_comments)
 
-                if notification["action"] == "commented":
-                    process_commented_notification(notification, user_comments)
-
-        if len(batch_data.get("notifications", [])) < LIMIT:
+        if len(data.get("notifications", [])) < LIMIT:
             break
 
-        offset += batch_size * LIMIT
+        offset += LIMIT
 
     return user_likes, user_comments
 
