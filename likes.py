@@ -111,6 +111,10 @@ def main():
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
                 )
+            comments_df = pd.DataFrame(
+                    list(user_comments.items()), columns=["User", "Comments"]
+                )
+
             st.subheader("Total Likes and Comments")
             st.write(f"Total Likes: {total_likes}")
             st.write(f"Total Comments: {total_comments}")
