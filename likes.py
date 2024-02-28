@@ -135,10 +135,9 @@ def main():
                 resource_comments_df = resource_comments_df.set_index("Resource UUID")
                 st.dataframe(resource_comments_df)
 
-                most_commented_resource_uuid = resource_comments_df.iloc[0][
-                    "Resource UUID"
-                ]
+                most_commented_resource_uuid = resource_comments_df.index[0]
                 most_comments_count = resource_comments_df.iloc[0]["Comments"]
+
                 st.subheader("Most Commented Post:")
                 st.write(f"Post ID: {most_commented_resource_uuid}")
                 st.write(f"Number of Comments: {most_comments_count}")
