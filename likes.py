@@ -15,14 +15,12 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-@st.cache_data(ttl=7200)
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
     user_likes.setdefault(name, set()).add(resource_uuid)
 
-@st.cache_data(ttl=7200)
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
 
@@ -31,7 +29,6 @@ def process_commented_notification(notification, user_comments, resource_comment
     resource_uuid = notification["resource_uuid"]
     resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
-@st.cache_data(ttl=7200)
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] = resource_collected.get(resource_uuid, 0) + 1
@@ -43,7 +40,6 @@ def display_top_users_stats(likes_df, percentile, total_likes):
     st.write(f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
 
 
-@st.cache_data(ttl=7200)
 def load_data(session):
     offset = 0
     user_likes = {}
