@@ -102,14 +102,14 @@ def main():
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
-                )
+                ).reset_index(drop=True)
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
                 st.subheader("Comments by user:")
                 comments_df = pd.DataFrame(
                     list(user_comments.items()), columns=["User", "Comments"]
-                )
+                ).reset_index(drop=True)
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             col3 = st.columns(1)[0]
@@ -118,7 +118,7 @@ def main():
                 resource_comments_df = pd.DataFrame(
                     list(resource_comments.items()),
                     columns=["Resource UUID", "Comments"],
-                )
+                ).reset_index(drop=True)
                 resource_comments_df = resource_comments_df.sort_values(
                     by="Comments", ascending=False
                 )
@@ -138,7 +138,7 @@ def main():
                 resource_collected_df = pd.DataFrame(
                     list(resource_collected.items()),
                     columns=["Resource UUID", "Collected"],
-                )
+                ).reset_index(drop=True)
                 resource_collected_df = resource_collected_df.sort_values(
                     by="Collected", ascending=False
                 )
@@ -198,4 +198,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
