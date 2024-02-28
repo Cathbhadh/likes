@@ -132,6 +132,7 @@ def main():
                 resource_comments_df = resource_comments_df.sort_values(
                     by="Comments", ascending=False
                 )
+                resource_comments_df = resource_comments_df.set_index("Resource UUID")
                 st.dataframe(resource_comments_df)
 
                 most_commented_resource_uuid = resource_comments_df.iloc[0][
@@ -152,12 +153,14 @@ def main():
                 resource_collected_df = resource_collected_df.sort_values(
                     by="Collected", ascending=False
                 )
+                resource_collected_df = resource_collected_df.set_index("Resource UUID")
                 st.dataframe(resource_collected_df)
 
                 most_collected_resource_uuid = resource_collected_df.iloc[0][
                     "Resource UUID"
                 ]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
+                
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
