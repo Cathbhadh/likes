@@ -15,14 +15,14 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-
+@st.cache_data(ttl=7200)
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
     user_likes.setdefault(name, set()).add(resource_uuid)
 
-
+@st.cache_data(ttl=7200)
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
 
@@ -31,12 +31,19 @@ def process_commented_notification(notification, user_comments, resource_comment
     resource_uuid = notification["resource_uuid"]
     resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
-
+@st.cache_data(ttl=7200)
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] = resource_collected.get(resource_uuid, 0) + 1
+    
+def display_top_users_stats(likes_df, percentile, total_likes):
+    top_users = likes_df.sort_values("Likes", ascending=False).head(int(percentile * len(likes_df)))
+    pct_top_users = len(top_users) / len(likes_df) * 100
+    pct_likes_top_users = top_users['Likes'].sum() / total_likes * 100
+    st.write(f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
 
 
+@st.cache_data(ttl=7200)
 def load_data(session):
     offset = 0
     user_likes = {}
@@ -164,22 +171,7 @@ def main():
             percentiles_values_comments = np.percentile(
                 comments_df["Comments"], percentiles
             )
-            st.subheader("% of Likes by Top Users")
-            top_10_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.10*len(likes_df)))
-            pct_top_10_users = len(top_10_pct_users)/len(likes_df)*100
-            pct_likes_top_10_users = top_10_pct_users['Likes'].sum()/total_likes*100
-            st.write(f"{len(top_10_pct_users)} users ({pct_top_10_users:.1f}% of all users) contributed {pct_likes_top_10_users:.1f}% of total likes")
-
-            top_25_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.25*len(likes_df)))
-            pct_top_users = len(top_25_pct_users)/len(likes_df)*100
-            pct_likes_top_users = top_25_pct_users['Likes'].sum()/total_likes*100
-            st.write(f"{len(top_25_pct_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
-            top_50_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.50*len(likes_df)))
-            pct_top_50_users = len(top_50_pct_users)/len(likes_df)*100
-            pct_likes_top_50_users = top_50_pct_users['Likes'].sum()/total_likes*100
-            st.write(f"{len(top_50_pct_users)} users ({pct_top_50_users:.1f}% of all users) contributed {pct_likes_top_50_users:.1f}% of total likes")
-
-
+            
             col5, col6 = st.columns(2)
 
             with col5:
@@ -193,6 +185,11 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
+            
+            st.subheader("% of Likes by Top Users")
+            display_top_users_stats(likes_df, 0.10, total_likes)
+            display_top_users_stats(likes_df, 0.25, total_likes)
+            display_top_users_stats(likes_df, 0.50, total_likes)
 
 
             end_time = time.perf_counter()
