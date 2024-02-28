@@ -102,7 +102,7 @@ def main():
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
-                ).drop(axis=0)
+                ).drop(columns=likes_df.columns[0])
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
