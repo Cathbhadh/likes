@@ -164,11 +164,6 @@ def main():
             percentiles_values_comments = np.percentile(
                 comments_df["Comments"], percentiles
             )
-            st.subheader("% of Likes by Top Users")
-            top_25_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.25*len(likes_df)))
-            pct_top_users = len(top_25_pct_users)/len(likes_df)*100
-            pct_likes_top_users = top_25_pct_users['Likes'].sum()/total_likes*100
-            st.write(f"{len(top_25_pct_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
 
             col5, col6 = st.columns(2)
 
@@ -183,6 +178,30 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
+            likes_df = pd.DataFrame({'User': ['A', 'B', 'C', 'D', 'E'], 
+                         'Likes': [100, 60, 30, 15, 5]})
+
+            total_likes = likes_df['Likes'].sum()
+            
+            # Top 10% users 
+            st.subheader('Top 10% Users')
+            top_10pct = likes_df.sort_values('Likes', ascending=False).head(int(0.1*len(likes_df)))
+            
+            num_users = len(top_10pct)  
+            pct_users = num_users/len(likes_df)*100
+            pct_likes = top_10pct['Likes'].sum()/total_likes*100
+            
+            st.write(f'{num_users} users ({pct_users:.1f}% of total) contributed {pct_likes:.2f}% of total likes')
+            
+            # Top 50% Users
+            st.subheader('Top 50% Users')
+            top_50pct = likes_df.sort_values('Likes', ascending=False).head(int(0.5*len(likes_df)))  
+            
+            num_users = len(top_50pct)
+            pct_users = num_users/len(likes_df)*100  
+            pct_likes = top_50pct['Likes'].sum()/total_likes*100
+            
+            st.write(f'{num_users} users ({pct_users:.1f}% of total) contributed {pct_likes:.2f}% of total likes')
 
             end_time = time.perf_counter()
             execution_time = end_time - start_time
