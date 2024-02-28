@@ -15,11 +15,13 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
+
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
 
     user_likes.setdefault(name, set()).add(resource_uuid)
+
 
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
@@ -29,15 +31,21 @@ def process_commented_notification(notification, user_comments, resource_comment
     resource_uuid = notification["resource_uuid"]
     resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
+
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] = resource_collected.get(resource_uuid, 0) + 1
-    
+
+
 def display_top_users_stats(likes_df, percentile, total_likes):
-    top_users = likes_df.sort_values("Likes", ascending=False).head(int(percentile * len(likes_df)))
+    top_users = likes_df.sort_values("Likes", ascending=False).head(
+        int(percentile * len(likes_df))
+    )
     pct_top_users = len(top_users) / len(likes_df) * 100
-    pct_likes_top_users = top_users['Likes'].sum() / total_likes * 100
-    st.write(f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
+    pct_likes_top_users = top_users["Likes"].sum() / total_likes * 100
+    st.write(
+        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
+    )
 
 
 def load_data(session):
@@ -103,7 +111,7 @@ def main():
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
                 )
-                likes_df = likes_df.set_index('User')
+                likes_df = likes_df.set_index("User")
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
@@ -111,7 +119,7 @@ def main():
                 comments_df = pd.DataFrame(
                     list(user_comments.items()), columns=["User", "Comments"]
                 )
-                comments_df = comments_df.set_index('User')
+                comments_df = comments_df.set_index("User")
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             col3 = st.columns(1)[0]
@@ -124,7 +132,6 @@ def main():
                 resource_comments_df = resource_comments_df.sort_values(
                     by="Comments", ascending=False
                 )
-                resource_comments_df = resource_comments_df.set_index('Resource UUID')
                 st.dataframe(resource_comments_df)
 
                 most_commented_resource_uuid = resource_comments_df.iloc[0][
@@ -142,7 +149,6 @@ def main():
                     list(resource_collected.items()),
                     columns=["Resource UUID", "Collected"],
                 )
-                resource_collected_df = resource_collected_df.set_index('Resource UUID')
                 resource_collected_df = resource_collected_df.sort_values(
                     by="Collected", ascending=False
                 )
@@ -171,7 +177,7 @@ def main():
             percentiles_values_comments = np.percentile(
                 comments_df["Comments"], percentiles
             )
-            
+
             col5, col6 = st.columns(2)
 
             with col5:
@@ -185,12 +191,11 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
-            
+
             st.subheader("% of Likes by Top Users")
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
-
 
             end_time = time.perf_counter()
             execution_time = end_time - start_time
