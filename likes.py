@@ -74,9 +74,6 @@ def main():
     if access_token:
         session = authenticate_with_token(access_token)
 
-        # New input field for specifying the number of people
-        num_people = st.number_input("Specify the number of people", min_value=1)
-
         if st.button("Load Data"):
             start_time = time.perf_counter()
             (
@@ -167,13 +164,12 @@ def main():
             percentiles_values_comments = np.percentile(
                 comments_df["Comments"], percentiles
             )
-            st.subheader("Like cut")
-            num_users_input = st.number_input('Enter the % of users', min_value=1, max_value=100, value=10)
-            num_users = round(len(user_likes) * (num_users_input / 100))
-            sorted_likes = likes_df.sort_values('Likes', ascending=False)
-            top_users = sorted_likes.head(num_users)
-            percent_likes = (top_users['Likes'].sum() / total_likes) * 100
-            st.write(f'{num_users_input}% of users ({num_users} users) made {percent_likes:.2f}% of total likes')
+            st.subheader("% of Likes by Top Users")
+            top_25_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.25*len(likes_df)))
+            pct_top_users = len(top_25_pct_users)/len(likes_df)*100
+            pct_likes_top_users = top_25_pct_users['Likes'].sum()/total_likes*100
+            st.write(f"{len(top_25_pct_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
+
             col5, col6 = st.columns(2)
 
             with col5:
