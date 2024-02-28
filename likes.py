@@ -102,8 +102,7 @@ def main():
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
-                )
-                likes_df = likes_df.drop(likes_df.columns[0], axis=1)
+                ).set_index('User', inplace = True)
 
 
 
