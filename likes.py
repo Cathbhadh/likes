@@ -103,7 +103,7 @@ def main():
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
                 )
-                likes_df = likes_df.set_index('User', inplace=True)
+                likes_df = likes_df.set_index('User')
 
 
 
