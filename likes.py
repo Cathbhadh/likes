@@ -118,10 +118,10 @@ def main():
             st.write(f"Post ID: {most_collected_resource_uuid}")
             st.write(f"Number of Collections: {most_collected_count}")
 
-            st.subheader("User Interaction Statistics:")
-            st.write(f"Number of Users who Liked: {len(user_likes)}")
-            st.write(f"Number of Users who Commented: {len(user_comments)}")
-            st.write(f"Number of Users who Collected: {len(resource_collected)}")
+        st.subheader("User Interaction Statistics:")
+        st.write(f"Number of Users who Liked: {len(user_likes)}")
+        st.write(f"Number of Users who Commented: {len(user_comments)}")
+        st.write(f"Number of Users who Collected: {len(resource_collected)}")
 
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
