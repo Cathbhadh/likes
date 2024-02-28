@@ -155,9 +155,7 @@ def main():
                 resource_collected_df = resource_collected_df.set_index("Resource UUID")
                 st.dataframe(resource_collected_df)
 
-                most_collected_resource_uuid = resource_collected_df.iloc[0][
-                    "Resource UUID"
-                ]
+                most_collected_resource_uuid = resource_collected_df.index[0]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
                 
                 st.subheader("Most Collected Post:")
