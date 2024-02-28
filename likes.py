@@ -16,7 +16,9 @@ def authenticate_with_token(access_token):
     return session
 
 
-def process_notification(notification, user_likes, user_comments, resource_comments, resource_collected):
+def process_notification(
+    notification, user_likes, user_comments, resource_comments, resource_collected
+):
     action = notification["action"]
     user_profile = notification["user_profile"]
     resource_uuid = notification["resource_uuid"]
@@ -25,7 +27,9 @@ def process_notification(notification, user_likes, user_comments, resource_comme
         user_likes.setdefault(user_profile["name"], set()).add(resource_uuid)
 
     if action == "commented":
-        user_comments[user_profile["name"]] = user_comments.get(user_profile["name"], 0) + 1
+        user_comments[user_profile["name"]] = (
+            user_comments.get(user_profile["name"], 0) + 1
+        )
         resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
 
     if action == "collected":
@@ -35,19 +39,33 @@ def process_notification(notification, user_likes, user_comments, resource_comme
 def display_top_users_stats(df, percentile, total_likes):
     top_users = df.sort_values("Likes", ascending=False).head(int(percentile * len(df)))
     pct_top_users = len(top_users) / len(df) * 100
-    pct_likes_top_users = top_users['Likes'].sum() / total_likes * 100
-    st.write(f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
+    pct_likes_top_users = top_users["Likes"].sum() / total_likes * 100
+    st.write(
+        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
+    )
 
 
 def load_data(session):
-    offset, user_likes, user_comments, resource_comments, resource_collected = 0, {}, {}, {}, {}
+    offset, user_likes, user_comments, resource_comments, resource_collected = (
+        0,
+        {},
+        {},
+        {},
+        {},
+    )
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
 
         for notification in data.get("notifications", []):
-            process_notification(notification, user_likes, user_comments, resource_comments, resource_collected)
+            process_notification(
+                notification,
+                user_likes,
+                user_comments,
+                resource_comments,
+                resource_collected,
+            )
 
         if len(data.get("notifications", [])) < LIMIT:
             break
@@ -83,7 +101,10 @@ def main():
         with col1:
             st.subheader("Likes by user:")
             likes_df = pd.DataFrame(
-                {"User": list(user_likes.keys()), "Likes": [len(posts) for posts in user_likes.values()]}
+                {
+                    "User": list(user_likes.keys()),
+                    "Likes": [len(posts) for posts in user_likes.values()],
+                }
             )
             st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
@@ -94,14 +115,18 @@ def main():
             )
             st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
+        col3, col4 = st.columns(2)
+
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame(
                 list(resource_comments.items()), columns=["Resource UUID", "Comments"]
             ).sort_values(by="Comments", ascending=False)
             st.dataframe(resource_comments_df)
-            most_commented_resource_uuid, most_comments_count = resource_comments_df.iloc[0][
-                "Resource UUID"], resource_comments_df.iloc[0]["Comments"]
+            most_commented_resource_uuid, most_comments_count = (
+                resource_comments_df.iloc[0]["Resource UUID"],
+                resource_comments_df.iloc[0]["Comments"],
+            )
             st.subheader("Most Commented Post:")
             st.write(f"Post ID: {most_commented_resource_uuid}")
             st.write(f"Number of Comments: {most_comments_count}")
@@ -112,8 +137,10 @@ def main():
                 list(resource_collected.items()), columns=["Resource UUID", "Collected"]
             ).sort_values(by="Collected", ascending=False)
             st.dataframe(resource_collected_df)
-            most_collected_resource_uuid, most_collected_count = resource_collected_df.iloc[0][
-                "Resource UUID"], resource_collected_df.iloc[0]["Collected"]
+            most_collected_resource_uuid, most_collected_count = (
+                resource_collected_df.iloc[0]["Resource UUID"],
+                resource_collected_df.iloc[0]["Collected"],
+            )
             st.subheader("Most Collected Post:")
             st.write(f"Post ID: {most_collected_resource_uuid}")
             st.write(f"Number of Collections: {most_collected_count}")
