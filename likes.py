@@ -181,6 +181,15 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
+            st.subheader("Like cut")
+            num_users_input = st.number_input('Enter the % of users', min_value=1, max_value=100, value=10)
+            num_users = round(len(user_likes) * (num_users_input / 100))
+                            
+            sorted_likes = likes_df.sort_values('Likes', ascending=False)
+            top_users = sorted_likes.head(num_users)
+            percent_likes = (top_users['Likes'].sum() / total_likes) * 100
+                            
+            st.write(f'{num_users_input}% of users ({num_users} users) made {percent_likes:.2f}% of total likes')
 
             # Calculate the percentage of total likes for specified number of people
             percentage_likes = (num_people / len(user_likes)) * 100
