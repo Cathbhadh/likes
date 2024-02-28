@@ -104,10 +104,6 @@ def main():
                     }
                 )
                 likes_df = likes_df.set_index('User')
-
-
-
-
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
@@ -115,6 +111,7 @@ def main():
                 comments_df = pd.DataFrame(
                     list(user_comments.items()), columns=["User", "Comments"]
                 )
+                comments_df = comments_df.set_index('User')
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             col3 = st.columns(1)[0]
@@ -127,6 +124,7 @@ def main():
                 resource_comments_df = resource_comments_df.sort_values(
                     by="Comments", ascending=False
                 )
+                resource_comments_df = resource_comments_df.set_index('Resource UUID')
                 st.dataframe(resource_comments_df)
 
                 most_commented_resource_uuid = resource_comments_df.iloc[0][
@@ -144,6 +142,7 @@ def main():
                     list(resource_collected.items()),
                     columns=["Resource UUID", "Collected"],
                 )
+                resource_collected_df = resource_collected_df.set_index('Resource UUID')
                 resource_collected_df = resource_collected_df.sort_values(
                     by="Collected", ascending=False
                 )
