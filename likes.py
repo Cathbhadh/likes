@@ -165,25 +165,20 @@ def main():
                 comments_df["Comments"], percentiles
             )
             st.subheader("% of Likes by Top Users")
+            top_10_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.10*len(likes_df)))
+            pct_top_10_users = len(top_10_pct_users)/len(likes_df)*100
+            pct_likes_top_10_users = top_10_pct_users['Likes'].sum()/total_likes*100
+            st.write(f"{len(top_10_pct_users)} users ({pct_top_10_users:.1f}% of all users) contributed {pct_likes_top_10_users:.1f}% of total likes")
+
             top_25_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.25*len(likes_df)))
             pct_top_users = len(top_25_pct_users)/len(likes_df)*100
             pct_likes_top_users = top_25_pct_users['Likes'].sum()/total_likes*100
             st.write(f"{len(top_25_pct_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes")
-            top_10pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.1 * len(likes_df)))
-            top_50pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.5 * len(likes_df)))
-            bottom_25pct_users = likes_df.sort_values("Likes").head(int(0.25 * len(likes_df)))
-            mid_users = likes_df.sort_values("Likes").iloc[int(0.5 * len(likes_df)):int(0.75 * len(likes_df))]
-            
-            # Displaying results
-            pct_top_10_users = len(top_10pct_users) / len(likes_df) * 100
-            pct_top_50_users = len(top_50pct_users) / len(likes_df) * 100
-            pct_bottom_25_users = len(bottom_25pct_users) / len(likes_df) * 100
-            pct_mid_users = len(mid_users) / len(likes_df) * 100
-            
-            st.write(f"{len(top_10pct_users)} users ({pct_top_10_users:.1f}% of all users) in the top 10%")
-            st.write(f"{len(top_50pct_users)} users ({pct_top_50_users:.1f}% of all users) in the top 50%")
-            st.write(f"{len(bottom_25pct_users)} users ({pct_bottom_25_users:.1f}% of all users) in the bottom 25%")
-            st.write(f"{len(mid_users)} users ({pct_mid_users:.1f}% of all users) in the middle 25% (50% to 75%)")
+            top_50_pct_users = likes_df.sort_values("Likes", ascending=False).head(int(0.50*len(likes_df)))
+            pct_top_50_users = len(top_50_pct_users)/len(likes_df)*100
+            pct_likes_top_50_users = top_50_pct_users['Likes'].sum()/total_likes*100
+            st.write(f"{len(top_50_pct_users)} users ({pct_top_50_users:.1f}% of all users) contributed {pct_likes_top_50_users:.1f}% of total likes")
+
 
             col5, col6 = st.columns(2)
 
@@ -198,10 +193,6 @@ def main():
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
-            likes_df = pd.DataFrame({'User': ['A', 'B', 'C', 'D', 'E'], 
-                         'Likes': [100, 60, 30, 15, 5]})
-
-            total_likes = likes_df['Likes'].sum()
 
 
             end_time = time.perf_counter()
