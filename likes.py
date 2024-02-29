@@ -116,6 +116,7 @@ def main():
                 user_comments,
                 resource_comments,
                 resource_collected,
+                notifications,
             ) = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
