@@ -15,13 +15,12 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
+
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
-    user_id = notification["actor_uuid"]
-    
     resource_uuid = notification["resource_uuid"]
 
-    user_likes.setdefault(user_id, {}).setdefault(name, []).append(resource_uuid)
+    user_likes.setdefault(name, set()).add(resource_uuid)
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -49,7 +48,7 @@ def display_top_users_stats(likes_df, percentile, total_likes):
     )
 
 
-def load_data(session):
+def load_data(session, actor_uuid):
     offset = 0
     user_likes = {}
     user_comments = {}
@@ -61,7 +60,7 @@ def load_data(session):
         data = resp.json()
 
         for notification in data.get("notifications", []):
-            if notification["action"] == "liked" and notification.get("resource_media"):
+            if notification["action"] == "liked" and notification.get("resource_media") and notification["user_profile"]["actor_uuid"] == actor_uuid:
                 process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
@@ -80,10 +79,12 @@ def load_data(session):
     return user_likes, user_comments, resource_comments, resource_collected
 
 
+
 def main():
     access_token = st.text_input("Enter your access token")
 
     if access_token:
+        actor_uuid = st.text_input("Enter user actor_uuid")
         session = authenticate_with_token(access_token)
 
         if st.button("Load Data"):
@@ -93,7 +94,7 @@ def main():
                 user_comments,
                 resource_comments,
                 resource_collected,
-            ) = load_data(session)
+            ) = load_data(session, actor_uuid)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
             total_comments = sum(user_comments.values())
@@ -101,16 +102,6 @@ def main():
             st.subheader("Total Likes and Comments")
             st.write(f"Total Likes: {total_likes}")
             st.write(f"Total Comments: {total_comments}")
-            user_id = st.text_input("Enter user ID:") 
-
-            if user_id in user_likes:
-                posts_liked = user_likes[user_id]
-                for name, liked_posts in posts_liked.items():
-                    st.header(f"{name} liked these posts:")
-                    st.write(liked_posts)
-            else:
-               st.write(f"No posts liked by user {user_id} found")
-
 
             col1, col2 = st.columns(2)
 
@@ -168,7 +159,7 @@ def main():
 
                 most_collected_resource_uuid = resource_collected_df.index[0]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
-
+                
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
