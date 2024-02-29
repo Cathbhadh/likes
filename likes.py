@@ -46,6 +46,7 @@ def generate_likes_dataframe(user_likes, notifications):
 
 
 
+
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
 
