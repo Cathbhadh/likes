@@ -99,7 +99,7 @@ def load_data(session):
             if notification["action"] == "collected":
                 process_collected_notification(notification, resource_collected)
 
-        if len(current_notifications) < LIMIT:
+        if len(data.get("notifications", [])) < LIMIT:
             break
 
         offset += LIMIT
@@ -121,7 +121,7 @@ def main():
                 user_comments,
                 resource_comments,
                 resource_collected,
-                notifications,
+                notifications
             ) = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
