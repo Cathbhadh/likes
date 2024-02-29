@@ -220,7 +220,7 @@ def main():
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
-            likes_df = generate_likes_dataframe(user_likes)
+            likes_df = generate_likes_dataframe(user_likes, notifications)
 
             st.subheader("Likes by User:")
             st.dataframe(likes_df)
