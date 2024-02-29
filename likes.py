@@ -17,7 +17,7 @@ def authenticate_with_token(access_token):
 
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
-    user_id = notification["user_profile"]["id"]
+    user_id = notification["actor_uuid"]
     
     resource_uuid = notification["resource_uuid"]
 
@@ -103,14 +103,14 @@ def main():
             st.write(f"Total Comments: {total_comments}")
             user_id = st.text_input("Enter user ID:") 
 
-            if user_id:
-                if user_id in user_likes:
-                    posts_liked = user_likes[user_id]
-                    for name, liked_posts in posts_liked.items():
-                        st.header(f"{name} liked these posts:")
-                        st.write(liked_posts)
-                else:
-                    st.write(f"No posts liked by user {user_id} found")
+            if user_id in user_likes:
+                posts_liked = user_likes[user_id]
+                for name, liked_posts in posts_liked.items():
+                    st.header(f"{name} liked these posts:")
+                    st.write(liked_posts)
+            else:
+               st.write(f"No posts liked by user {user_id} found")
+
 
                 col1, col2 = st.columns(2)
 
