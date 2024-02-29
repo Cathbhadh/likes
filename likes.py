@@ -99,12 +99,13 @@ def load_data(session):
             if notification["action"] == "collected":
                 process_collected_notification(notification, resource_collected)
 
-        if len(data.get("notifications", [])) < LIMIT:
+        if len(current_notifications) == 0:  # Break if no new notifications
             break
 
         offset += LIMIT
 
-    return user_likes, user_comments, resource_comments, resource_collected, notifications  # Return notifications
+    return user_likes, user_comments, resource_comments, resource_collected, notifications
+
 
 
 
