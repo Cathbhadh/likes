@@ -22,28 +22,23 @@ def process_liked_notification(notification, user_likes):
 
     user_likes.setdefault(name, set()).add(resource_uuid)
 
-def generate_likes_dataframe(user_likes, notifications):
+
+def generate_likes_dataframe(user_likes):
     liked_data = []
 
     for user, liked_posts in user_likes.items():
         for post_uuid in liked_posts:
-            for notification in notifications:
-                if (
-                    notification["action"] == "liked"
-                    and notification.get("resource_media")
-                    and notification["resource_uuid"] == post_uuid
-                ):
-                    liked_data.append({
-                        "actor_uuid": user,
-                        "resource_uuid": post_uuid,
-                        "created_at": notification["created_at"]
-                    })
+            liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid})
 
     likes_df = pd.DataFrame(liked_data)
-    likes_df.sort_values(by="created_at", ascending=False, inplace=True)
-    likes_df.drop(columns=["created_at"], inplace=True)  # Remove the additional created_at column
+    
+    # Convert the "created_at" column to datetime
+    likes_df['created_at'] = pd.to_datetime(likes_df['created_at'])
+    
+    # Sort the DataFrame by the "created_at" column in descending order
+    likes_df = likes_df.sort_values(by='created_at', ascending=False)
+    
     return likes_df
-
 
 
 
@@ -78,16 +73,12 @@ def load_data(session):
     user_comments = {}
     resource_comments = {}
     resource_collected = {}
-    notifications = []  # Add this line to store notifications
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
-        current_notifications = data.get("notifications", [])
 
-        notifications.extend(current_notifications)  # Extend the notifications list
-
-        for notification in current_notifications:
+        for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
                 process_liked_notification(notification, user_likes)
 
@@ -99,14 +90,12 @@ def load_data(session):
             if notification["action"] == "collected":
                 process_collected_notification(notification, resource_collected)
 
-        if len(current_notifications) == 0:  # Break if no new notifications
+        if len(data.get("notifications", [])) < LIMIT:
             break
 
         offset += LIMIT
 
-    return user_likes, user_comments, resource_comments, resource_collected, notifications
-
-
+    return user_likes, user_comments, resource_comments, resource_collected
 
 
 def main():
@@ -122,7 +111,6 @@ def main():
                 user_comments,
                 resource_comments,
                 resource_collected,
-                notifications
             ) = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
@@ -227,10 +215,11 @@ def main():
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
-            likes_df = generate_likes_dataframe(user_likes, notifications)
-
+            
+            likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User:")
             st.dataframe(likes_df)
+            
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
