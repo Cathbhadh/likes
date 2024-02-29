@@ -24,12 +24,16 @@ def process_liked_notification(notification, user_likes):
 
 def generate_likes_dataframe(user_likes):
     liked_data = []
+    notification_order = []
 
     for user, liked_posts in user_likes.items():
         for post_uuid in liked_posts:
             liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid})
+            notification_order.append(post_uuid)
 
     likes_df = pd.DataFrame(liked_data)
+    likes_df['notification_order'] = notification_order  # Add a column for notification order
+    likes_df.set_index('notification_order', inplace=True)  # Set order as the index
     return likes_df
 
 
