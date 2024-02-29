@@ -78,13 +78,16 @@ def load_data(session):
     user_comments = {}
     resource_comments = {}
     resource_collected = {}
-    notifications = []
+    notifications = []  # Add this line to store notifications
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
+        current_notifications = data.get("notifications", [])
 
-        for notification in data.get("notifications", []):
+        notifications.extend(current_notifications)  # Extend the notifications list
+
+        for notification in current_notifications:
             if notification["action"] == "liked" and notification.get("resource_media"):
                 process_liked_notification(notification, user_likes)
 
@@ -96,12 +99,13 @@ def load_data(session):
             if notification["action"] == "collected":
                 process_collected_notification(notification, resource_collected)
 
-        if len(data.get("notifications", [])) < LIMIT:
+        if len(current_notifications) < LIMIT:
             break
 
         offset += LIMIT
 
-    return user_likes, user_comments, resource_comments, resource_collected
+    return user_likes, user_comments, resource_comments, resource_collected, notifications  # Return notifications
+
 
 
 def main():
