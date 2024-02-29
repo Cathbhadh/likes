@@ -78,6 +78,7 @@ def load_data(session):
     user_comments = {}
     resource_comments = {}
     resource_collected = {}
+    notifications = []
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
