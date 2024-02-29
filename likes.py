@@ -112,7 +112,7 @@ def main():
                st.write(f"No posts liked by user {user_id} found")
 
 
-                col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
             with col1:
                 st.subheader("Likes by user:")
