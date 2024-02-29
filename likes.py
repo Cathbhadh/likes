@@ -22,19 +22,28 @@ def process_liked_notification(notification, user_likes):
 
     user_likes.setdefault(name, set()).add(resource_uuid)
 
-def generate_likes_dataframe(user_likes):
+def generate_likes_dataframe(user_likes, notifications):
     liked_data = []
-    notification_order = []
 
     for user, liked_posts in user_likes.items():
         for post_uuid in liked_posts:
-            liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid})
-            notification_order.append(post_uuid)
+            for notification in notifications:
+                if (
+                    notification["action"] == "liked"
+                    and notification.get("resource_media")
+                    and notification["resource_uuid"] == post_uuid
+                ):
+                    liked_data.append({
+                        "actor_uuid": user,
+                        "resource_uuid": post_uuid,
+                        "created_at": notification["created_at"]
+                    })
 
     likes_df = pd.DataFrame(liked_data)
-    likes_df['notification_order'] = notification_order  # Add a column for notification order
-    likes_df.set_index('notification_order', inplace=True)  # Set order as the index
+    likes_df.sort_values(by="created_at", ascending=False, inplace=True)
+    likes_df.drop(columns=["created_at"], inplace=True)  # Remove the additional created_at column
     return likes_df
+
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
