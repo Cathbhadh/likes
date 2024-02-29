@@ -48,7 +48,7 @@ def display_top_users_stats(likes_df, percentile, total_likes):
     )
 
 
-def load_data(session, actor_uuid):
+def load_data(session):
     offset = 0
     user_likes = {}
     user_comments = {}
@@ -60,13 +60,7 @@ def load_data(session, actor_uuid):
         data = resp.json()
 
         for notification in data.get("notifications", []):
-            user_profile = notification.get("user_profile", {})
-            # Check if actor_uuid is present in user_profile
-            if (
-                notification["action"] == "liked"
-                and notification.get("resource_media")
-                and user_profile.get("actor_uuid") == actor_uuid
-            ):
+            if notification["action"] == "liked" and notification.get("resource_media"):
                 process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
@@ -85,13 +79,10 @@ def load_data(session, actor_uuid):
     return user_likes, user_comments, resource_comments, resource_collected
 
 
-
-
 def main():
     access_token = st.text_input("Enter your access token")
 
     if access_token:
-        actor_uuid = st.text_input("Enter user actor_uuid")
         session = authenticate_with_token(access_token)
 
         if st.button("Load Data"):
@@ -101,7 +92,7 @@ def main():
                 user_comments,
                 resource_comments,
                 resource_collected,
-            ) = load_data(session, actor_uuid)
+            ) = load_data(session)
 
             total_likes = sum(len(posts) for posts in user_likes.values())
             total_comments = sum(user_comments.values())
