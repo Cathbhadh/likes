@@ -60,7 +60,13 @@ def load_data(session, actor_uuid):
         data = resp.json()
 
         for notification in data.get("notifications", []):
-            if notification["action"] == "liked" and notification.get("resource_media") and notification["user_profile"]["actor_uuid"] == actor_uuid:
+            user_profile = notification.get("user_profile", {})
+            # Check if actor_uuid is present in user_profile
+            if (
+                notification["action"] == "liked"
+                and notification.get("resource_media")
+                and user_profile.get("actor_uuid") == actor_uuid
+            ):
                 process_liked_notification(notification, user_likes)
 
             if notification["action"] == "commented":
@@ -77,6 +83,7 @@ def load_data(session, actor_uuid):
         offset += LIMIT
 
     return user_likes, user_comments, resource_comments, resource_collected
+
 
 
 
