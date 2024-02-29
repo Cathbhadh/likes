@@ -15,12 +15,13 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
+    user_id = notification["user_profile"]["id"]
+    
     resource_uuid = notification["resource_uuid"]
 
-    user_likes.setdefault(name, set()).add(resource_uuid)
+    user_likes.setdefault(user_id, {}).setdefault(name, []).append(resource_uuid)
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -100,8 +101,18 @@ def main():
             st.subheader("Total Likes and Comments")
             st.write(f"Total Likes: {total_likes}")
             st.write(f"Total Comments: {total_comments}")
+            user_id = st.text_input("Enter user ID:") 
 
-            col1, col2 = st.columns(2)
+            if user_id:
+                if user_id in user_likes:
+                    posts_liked = user_likes[user_id]
+                    for name, liked_posts in posts_liked.items():
+                        st.header(f"{name} liked these posts:")
+                        st.write(liked_posts)
+                else:
+                    st.write(f"No posts liked by user {user_id} found")
+
+                col1, col2 = st.columns(2)
 
             with col1:
                 st.subheader("Likes by user:")
@@ -157,7 +168,7 @@ def main():
 
                 most_collected_resource_uuid = resource_collected_df.index[0]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
-                
+
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
