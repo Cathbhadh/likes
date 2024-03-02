@@ -207,6 +207,7 @@ def main():
                     st.write(f"{percentile}th percentile: {rounded_value}")
 
             st.subheader("% of Likes by Top Users")
+            display_top_users_stats(likes_df, 0.05, total_likes)
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
