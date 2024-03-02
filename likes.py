@@ -132,7 +132,6 @@ def main():
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
                 )
-                likes_df["User"] = "https://yodayo.com/1/users/" + likes_df["User"].astype(str)
                 likes_df = likes_df.set_index("User")
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
