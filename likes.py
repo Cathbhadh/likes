@@ -215,7 +215,20 @@ def main():
             
             likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User:")
-            st.dataframe(likes_df, hide_index=True)
+            st.data_editor(likes_df, 
+               column_config={
+                   "actor_uuid": st.column_config.LinkColumn(
+                       "Actor UUID", 
+                       display_text="Open profile",
+                       link_func=lambda value: f"https://yodayo.com/1/users/{value}"
+                   ),
+                   "resource_uuid": st.column_config.LinkColumn(
+                       "Resource UUID",
+                       display_text="Open post", 
+                       link_func=lambda value: f"https://yodayo.com/posts/{value}"
+                   )
+               },
+               hide_index=True)
             
             end_time = time.perf_counter()
             execution_time = end_time - start_time
