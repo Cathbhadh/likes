@@ -7,6 +7,12 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
+def resource_uuid_link(uuid):
+    return f"https://yodayo.com/posts/{uuid}/"
+
+def actor_uuid_link(uuid):   
+    return f"https://yodayo.com/1/users/{uuid}/"
+
 
 def authenticate_with_token(access_token):
     session = requests.Session()
@@ -216,20 +222,20 @@ def main():
             likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User:")
             st.data_editor(
-                likes_df,
+                likes_df, 
                 column_config={
                     "actor_uuid": st.column_config.LinkColumn(
                         "Actor UUID",
-                        display_text="Open profile"
+                        link_func=actor_uuid_link 
                     ),
                     "resource_uuid": st.column_config.LinkColumn(
-                        "Resource UUID", 
-                        display_text="Open post"
+                        "Resource UUID",
+                        link_func=resource_uuid_link
                     )
                 },
-                hide_index=True
+                hide_index=True  
             )
-            
+                        
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
