@@ -7,6 +7,7 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
+
 def authenticate_with_token(access_token):
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
@@ -28,11 +29,17 @@ def generate_likes_dataframe(user_likes):
 
     for user, liked_posts in user_likes.items():
         for post_uuid, created_at in liked_posts:
-            liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid, "created_at": created_at})
+            liked_data.append(
+                {
+                    "actor_uuid": user,
+                    "resource_uuid": post_uuid,
+                    "created_at": created_at,
+                }
+            )
 
     likes_df = pd.DataFrame(liked_data)
-    likes_df['created_at'] = pd.to_datetime(likes_df['created_at'])
-    likes_df = likes_df.sort_values(by='created_at', ascending=False)
+    likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
+    likes_df = likes_df.sort_values(by="created_at", ascending=False)
 
     return likes_df
 
@@ -125,6 +132,7 @@ def main():
                         "Likes": [len(posts) for posts in user_likes.values()],
                     }
                 )
+                likes_df["User"] = "https://yodayo.com/1/users/" + likes_df["User"].astype(str)
                 likes_df = likes_df.set_index("User")
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
@@ -171,7 +179,7 @@ def main():
 
                 most_collected_resource_uuid = resource_collected_df.index[0]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
-                
+
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
@@ -211,29 +219,11 @@ def main():
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
-            
+
             likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User:")
-            st.data_editor(
-                likes_df, 
-                column_config={
-                    "actor_uuid": st.column_config.LinkColumn(
-                        "Actor UUID",
-                        display_text="Open profile", 
-                        value_format="%s",
-                        format_func=lambda value: f"https://yodayo.com/1/users/{value}/"
-                    ),
-                    "resource_uuid": st.column_config.LinkColumn(
-                        "Resource UUID",
-                        display_text="Open post",
-                        value_format="%s", 
-                        format_func=lambda value: f"https://yodayo.com/posts/{value}/"   
-                    ) 
-                },
-                hide_index=True   
-            )
+            st.dataframe(likes_df, hide_index=True)
 
-                        
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
