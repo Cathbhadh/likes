@@ -15,32 +15,26 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
+
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
-    created_at = notification["created_at"]  # Add this line to fetch 'created_at'
 
-    user_likes.setdefault(name, set()).add((resource_uuid, created_at))  # Include 'created_at'
-
+    user_likes.setdefault(name, set()).add(resource_uuid)
 
 
 def generate_likes_dataframe(user_likes):
     liked_data = []
 
     for user, liked_posts in user_likes.items():
-        for post_uuid, created_at in liked_posts:
-            liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid, "created_at": created_at})  # Include 'created_at'
+        for post_uuid in liked_posts:
+            liked_data.append({"actor_uuid": user, "resource_uuid": post_uuid})
 
     likes_df = pd.DataFrame(liked_data)
-
-    # Convert the "created_at" column to datetime
-    likes_df['created_at'] = pd.to_datetime(likes_df['created_at'])
-
-    # Sort the DataFrame by the "created_at" column in descending order
-    likes_df = likes_df.sort_values(by='created_at', ascending=False)
+    likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
+    likes_df = likes_df.sort_values(by="created_at", ascending=False)
 
     return likes_df
-
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -177,7 +171,7 @@ def main():
 
                 most_collected_resource_uuid = resource_collected_df.index[0]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
-                
+
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
@@ -216,11 +210,11 @@ def main():
             display_top_users_stats(likes_df, 0.10, total_likes)
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
-            
+
             likes_df = generate_likes_dataframe(user_likes)
-            st.subheader("Likes by User:")
-            st.dataframe(likes_df)
-            
+            st.subheader("Likes by User in Order:")
+            st.dataframe(likes_df, hide_index=True)
+
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
