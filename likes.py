@@ -211,7 +211,7 @@ def main():
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
 
-            likes_df = generate_likes_dataframe(user_likes, hide_index=True)
+            likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User in Order:")
             st.dataframe(likes_df)
 
