@@ -134,7 +134,7 @@ def main():
                     {
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
-                        "Latest Post URL": [post[2] for posts in user_likes.values() for post in posts],
+                        "Latest Post URL": [post[2] if posts else None for posts in user_likes.values() for post in posts],
                     }
                 )
                 likes_df = likes_df.set_index("User")
