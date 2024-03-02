@@ -20,20 +20,24 @@ def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
+    post_url = f"https://yodayo.com/posts/{resource_uuid}/"
+    user_url = f"https://yodayo.com/1/users/{name}/"
 
-    user_likes.setdefault(name, set()).add((resource_uuid, created_at))
+    user_likes.setdefault(name, set()).add((resource_uuid, created_at, post_url, user_url))
 
 
 def generate_likes_dataframe(user_likes):
     liked_data = []
 
     for user, liked_posts in user_likes.items():
-        for post_uuid, created_at in liked_posts:
+        for post_uuid, created_at, post_url, user_url in liked_posts:
             liked_data.append(
                 {
                     "actor_uuid": user,
                     "resource_uuid": post_uuid,
                     "created_at": created_at,
+                    "post_url": post_url,
+                    "user_url": user_url,
                 }
             )
 
@@ -130,6 +134,7 @@ def main():
                     {
                         "User": list(user_likes.keys()),
                         "Likes": [len(posts) for posts in user_likes.values()],
+                        "Latest Post URL": [posts[0][2] for posts in user_likes.values()],
                     }
                 )
                 likes_df = likes_df.set_index("User")
