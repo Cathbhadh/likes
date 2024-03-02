@@ -7,13 +7,6 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
-def resource_uuid_link(uuid):
-    return f"https://yodayo.com/posts/{uuid}/"
-
-def actor_uuid_link(uuid):   
-    return f"https://yodayo.com/1/users/{uuid}/"
-
-
 def authenticate_with_token(access_token):
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
@@ -226,15 +219,20 @@ def main():
                 column_config={
                     "actor_uuid": st.column_config.LinkColumn(
                         "Actor UUID",
-                        link_func=actor_uuid_link 
+                        display_text="Open profile", 
+                        value_format="%s",
+                        format_func=lambda value: f"https://yodayo.com/1/users/{value}/"
                     ),
                     "resource_uuid": st.column_config.LinkColumn(
                         "Resource UUID",
-                        link_func=resource_uuid_link
-                    )
+                        display_text="Open post",
+                        value_format="%s", 
+                        format_func=lambda value: f"https://yodayo.com/posts/{value}/"   
+                    ) 
                 },
-                hide_index=True  
+                hide_index=True   
             )
+
                         
             end_time = time.perf_counter()
             execution_time = end_time - start_time
