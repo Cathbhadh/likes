@@ -211,9 +211,9 @@ def main():
             display_top_users_stats(likes_df, 0.25, total_likes)
             display_top_users_stats(likes_df, 0.50, total_likes)
 
-            likes_df = generate_likes_dataframe(user_likes)
+            likes_df = generate_likes_dataframe(user_likes, hide_index=True)
             st.subheader("Likes by User in Order:")
-            st.dataframe(likes_df, hide_index=True)
+            st.dataframe(likes_df)
 
             end_time = time.perf_counter()
             execution_time = end_time - start_time
