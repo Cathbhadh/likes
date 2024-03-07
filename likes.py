@@ -8,14 +8,12 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
-
 def authenticate_with_token(access_token):
     session = requests.Session()
     jar = requests.cookies.RequestsCookieJar()
     jar.set("access_token", access_token)
     session.cookies = jar
     return session
-
 
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
@@ -24,6 +22,16 @@ def process_liked_notification(notification, user_likes):
 
     user_likes[name][(resource_uuid, created_at)] += 1
 
+def process_commented_notification(notification, user_comments, resource_comments):
+    name = notification["user_profile"]["name"]
+    resource_uuid = notification["resource_uuid"]
+
+    user_comments[name] += 1
+    resource_comments[resource_uuid] += 1
+
+def process_collected_notification(notification, resource_collected):
+    resource_uuid = notification["resource_uuid"]
+    resource_collected[resource_uuid] += 1
 
 def generate_likes_dataframe(user_likes):
     liked_data = []
@@ -47,30 +55,30 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-
-def process_commented_notification(notification, user_comments, resource_comments):
-    name = notification["user_profile"]["name"]
-    resource_uuid = notification["resource_uuid"]
-
-    user_comments[name] += 1
-    resource_comments[resource_uuid] += 1
-
-
-def process_collected_notification(notification, resource_collected):
-    resource_uuid = notification["resource_uuid"]
-    resource_collected[resource_uuid] += 1
-
-
-def display_top_users_stats(likes_df, percentile, total_likes):
-    top_users = likes_df.sort_values("Likes", ascending=False).head(
-        int(percentile * len(likes_df))
-    )
-    pct_top_users = len(top_users) / len(likes_df) * 100
-    pct_likes_top_users = top_users["Likes"].sum() / total_likes * 100
+def display_top_users_stats(df, percentile, total_count, label):
+    top_users = df.head(int(percentile * len(df)))
+    pct_top_users = len(top_users) / len(df) * 100
+    pct_top_count = top_users[label].sum() / total_count * 100
     st.write(
-        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
+        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_top_count:.1f}% of total {label.lower()}"
     )
 
+def get_most_interacted_resource(resource_interaction, label):
+    resource_interaction_df = pd.DataFrame.from_dict(resource_interaction, orient="index").reset_index()
+    resource_interaction_df.columns = ["Resource UUID", label]
+    resource_interaction_df = resource_interaction_df.sort_values(by=label, ascending=False)
+
+    most_interacted_resource_uuid = resource_interaction_df.iloc[0]["Resource UUID"]
+    most_interacted_count = resource_interaction_df.iloc[0][label]
+
+    return most_interacted_resource_uuid, most_interacted_count
+
+def print_stats(stats_dict, label):
+    st.subheader(f"{label} by User:")
+    stats_df = pd.DataFrame.from_dict(stats_dict, orient="index").reset_index()
+    stats_df.columns = ["User", label]
+    stats_df = stats_df.sort_values(by=label, ascending=False)
+    st.dataframe(stats_df)
 
 def load_data(session):
     offset = 0
@@ -78,7 +86,6 @@ def load_data(session):
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
-
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -102,7 +109,6 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments, resource_comments, resource_collected
-
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -129,59 +135,35 @@ def main():
             col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("Likes by user:")
                 likes_df = pd.DataFrame(
                     {
                         "User": list(user_likes.keys()),
                         "Likes": [sum(counter.values()) for counter in user_likes.values()],
                     }
-)
-                likes_df = likes_df.set_index("User")
-                st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
+                ).set_index("User")
+                likes_df = likes_df.sort_values(by="Likes", ascending=False)
+                st.dataframe(likes_df)
 
             with col2:
-                st.subheader("Comments by user:")
-                comments_df = pd.DataFrame.from_dict(user_comments, orient="index").reset_index()
-                comments_df.columns = ["User", "Comments"]
-                comments_df = comments_df.set_index("User")
-                st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
+                print_stats(user_comments, "Comments")
 
-            col3 = st.columns(1)[0]
+            col3, col4 = st.columns(2)
+
             with col3:
-                st.subheader("Comments by resource_uuid:")
-                resource_comments_df = pd.DataFrame.from_dict(
-                    resource_comments, orient="index"
-                ).reset_index()
-                resource_comments_df.columns = ["Resource UUID", "Comments"]
-                resource_comments_df = resource_comments_df.sort_values(
-                    by="Comments", ascending=False
+                print_stats(resource_comments, "Comments")
+                most_commented_resource_uuid, most_comments_count = get_most_interacted_resource(
+                    resource_comments, "Comments"
                 )
-                resource_comments_df = resource_comments_df.set_index("Resource UUID")
-                st.dataframe(resource_comments_df)
-
-                most_commented_resource_uuid = resource_comments_df.index[0]
-                most_comments_count = resource_comments_df.iloc[0]["Comments"]
 
                 st.subheader("Most Commented Post:")
                 st.write(f"Post ID: {most_commented_resource_uuid}")
                 st.write(f"Number of Comments: {most_comments_count}")
 
-            col4 = st.columns(1)[0]
             with col4:
-                st.subheader("Collected by resource_uuid:")
-                resource_collected_df = pd.DataFrame.from_dict(
-                    resource_collected, orient="index"
-                ).reset_index()
-                resource_collected_df.columns = ["Resource UUID", "Collected"]
-
-                resource_collected_df = resource_collected_df.sort_values(
-                    by="Collected", ascending=False
+                print_stats(resource_collected, "Collected")
+                most_collected_resource_uuid, most_collected_count = get_most_interacted_resource(
+                    resource_collected, "Collected"
                 )
-                resource_collected_df = resource_collected_df.set_index("Resource UUID")
-                st.dataframe(resource_collected_df)
-
-                most_collected_resource_uuid = resource_collected_df.index[0]
-                most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
@@ -200,7 +182,7 @@ def main():
             percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
             percentiles_values_likes = np.percentile(likes_df["Likes"], percentiles)
             percentiles_values_comments = np.percentile(
-                comments_df["Comments"], percentiles
+                pd.Series(user_comments.values()), percentiles
             )
 
             col5, col6 = st.columns(2)
@@ -218,10 +200,10 @@ def main():
                     st.write(f"{percentile}th percentile: {rounded_value}")
 
             st.subheader("% of Likes by Top Users")
-            display_top_users_stats(likes_df, 0.05, total_likes)
-            display_top_users_stats(likes_df, 0.10, total_likes)
-            display_top_users_stats(likes_df, 0.25, total_likes)
-            display_top_users_stats(likes_df, 0.50, total_likes)
+            display_top_users_stats(likes_df, 0.05, total_likes, "Likes")
+            display_top_users_stats(likes_df, 0.10, total_likes, "Likes")
+            display_top_users_stats(likes_df, 0.25, total_likes, "Likes")
+            display_top_users_stats(likes_df, 0.50, total_likes, "Likes")
 
             likes_df = generate_likes_dataframe(user_likes)
             st.subheader("Likes by User:")
@@ -234,6 +216,6 @@ def main():
     else:
         st.warning("Enter your access token:")
 
-
 if __name__ == "__main__":
     main()
+    
