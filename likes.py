@@ -131,10 +131,10 @@ def main():
             st.write(f"Total Likes: {total_likes}")
             st.write(f"Total Comments: {total_comments}")
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
 
             with col1:
-                st.subheader("Likes by User:")
+                st.subheader("Likes by user:")
                 likes_df = pd.DataFrame(
                     {
                         "User": list(user_likes.keys()),
@@ -145,31 +145,43 @@ def main():
                 st.dataframe(likes_df, hide_index=True)
 
             with col2:
-                st.subheader("Comments by User:")
+                st.subheader("Comments by user:")
                 print_stats(user_comments, "Comments")
 
+            col3 = st.columns(1)[0]
             with col3:
-                st.subheader("Comments by Resource UUID:")
-                print_stats(resource_comments, "Comments")
-
-            col4, col5 = st.columns(2)
-
-            with col4:
-                most_commented_resource_uuid, most_comments_count = get_most_interacted_resource(
-                    resource_comments, "Comments"
+                st.subheader("Comments by resource_uuid:")
+                resource_comments_df = pd.DataFrame.from_dict(
+                    resource_comments, orient="index"
+                ).reset_index()
+                resource_comments_df.columns = ["Resource UUID", "Comments"]
+                resource_comments_df = resource_comments_df.sort_values(
+                    by="Comments", ascending=False
                 )
+                st.dataframe(resource_comments_df, hide_index=True)
+
+                most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
+                most_comments_count = resource_comments_df.iloc[0]["Comments"]
 
                 st.subheader("Most Commented Post:")
                 st.write(f"Post ID: {most_commented_resource_uuid}")
                 st.write(f"Number of Comments: {most_comments_count}")
 
-            with col5:
-                st.subheader("Collected by Resource UUID:")
-                print_stats(resource_collected, "Collected")
+            col4 = st.columns(1)[0]
+            with col4:
+                st.subheader("Collected by resource_uuid:")
+                resource_collected_df = pd.DataFrame.from_dict(
+                    resource_collected, orient="index"
+                ).reset_index()
+                resource_collected_df.columns = ["Resource UUID", "Collected"]
 
-                most_collected_resource_uuid, most_collected_count = get_most_interacted_resource(
-                    resource_collected, "Collected"
+                resource_collected_df = resource_collected_df.sort_values(
+                    by="Collected", ascending=False
                 )
+                st.dataframe(resource_collected_df, hide_index=True)
+
+                most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
+                most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
@@ -188,18 +200,18 @@ def main():
             percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
             percentiles_values_likes = np.percentile(likes_df["Likes"], percentiles)
             percentiles_values_comments = np.percentile(
-                pd.Series(user_comments.values()), percentiles
+                comments_df["Comments"], percentiles
             )
 
-            col6, col7 = st.columns(2)
+            col5, col6 = st.columns(2)
 
-            with col6:
+            with col5:
                 st.subheader("Likes Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_likes):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
 
-            with col7:
+            with col6:
                 st.subheader("Comments Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
