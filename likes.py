@@ -146,6 +146,9 @@ def main():
 
             with col2:
                 st.subheader("Comments by user:")
+                comments_df = pd.DataFrame.from_dict(user_comments, orient="index").reset_index()
+                comments_df.columns = ["User", "Comments"]
+                comments_df = comments_df.sort_values(by="Comments", ascending=False)
                 print_stats(user_comments, "Comments")
 
             col3 = st.columns(1)[0]
