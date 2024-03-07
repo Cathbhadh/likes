@@ -140,7 +140,7 @@ def main():
                         "User": list(user_likes.keys()),
                         "Likes": [sum(counter.values()) for counter in user_likes.values()],
                     }
-                ).set_index("User")
+                )
                 likes_df = likes_df.sort_values(by="Likes", ascending=False)
                 st.dataframe(likes_df, hide_index=True)
 
