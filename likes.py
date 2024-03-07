@@ -131,8 +131,11 @@ def main():
             with col1:
                 st.subheader("Likes by user:")
                 likes_df = pd.DataFrame(
-                    {"User": list(user_likes.keys()), "Likes": list(user_likes.values())}
-                )
+                    {
+                        "User": list(user_likes.keys()),
+                        "Likes": [sum(counter.values()) for counter in user_likes.values()],
+                    }
+)
                 likes_df = likes_df.set_index("User")
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
