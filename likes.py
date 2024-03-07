@@ -1,3 +1,4 @@
+from collections import defaultdict, Counter
 import streamlit as st
 import requests
 import pandas as pd
@@ -21,20 +22,23 @@ def process_liked_notification(notification, user_likes):
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
 
-    user_likes.setdefault(name, set()).add((resource_uuid, created_at))
+    user_likes[name][(resource_uuid, created_at)] += 1
 
 
 def generate_likes_dataframe(user_likes):
     liked_data = []
 
     for user, liked_posts in user_likes.items():
-        for post_uuid, created_at in liked_posts:
-            liked_data.append(
-                {
-                    "actor_uuid": user,
-                    "resource_uuid": post_uuid,
-                    "created_at": created_at,
-                }
+        for (resource_uuid, created_at), count in liked_posts.items():
+            liked_data.extend(
+                [
+                    {
+                        "actor_uuid": user,
+                        "resource_uuid": resource_uuid,
+                        "created_at": created_at,
+                    }
+                ]
+                * count
             )
 
     likes_df = pd.DataFrame(liked_data)
@@ -46,16 +50,15 @@ def generate_likes_dataframe(user_likes):
 
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
-
-    user_comments[name] = user_comments.get(name, 0) + 1
-
     resource_uuid = notification["resource_uuid"]
-    resource_comments[resource_uuid] = resource_comments.get(resource_uuid, 0) + 1
+
+    user_comments[name] += 1
+    resource_comments[resource_uuid] += 1
 
 
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
-    resource_collected[resource_uuid] = resource_collected.get(resource_uuid, 0) + 1
+    resource_collected[resource_uuid] += 1
 
 
 def display_top_users_stats(likes_df, percentile, total_likes):
@@ -71,10 +74,11 @@ def display_top_users_stats(likes_df, percentile, total_likes):
 
 def load_data(session):
     offset = 0
-    user_likes = {}
-    user_comments = {}
-    resource_comments = {}
-    resource_collected = {}
+    user_likes = defaultdict(Counter)
+    user_comments = Counter()
+    resource_comments = Counter()
+    resource_collected = Counter()
+
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -127,29 +131,25 @@ def main():
             with col1:
                 st.subheader("Likes by user:")
                 likes_df = pd.DataFrame(
-                    {
-                        "User": list(user_likes.keys()),
-                        "Likes": [len(posts) for posts in user_likes.values()],
-                    }
+                    {"User": list(user_likes.keys()), "Likes": list(user_likes.values())}
                 )
                 likes_df = likes_df.set_index("User")
                 st.dataframe(likes_df.sort_values(by="Likes", ascending=False))
 
             with col2:
                 st.subheader("Comments by user:")
-                comments_df = pd.DataFrame(
-                    list(user_comments.items()), columns=["User", "Comments"]
-                )
+                comments_df = pd.DataFrame.from_dict(user_comments, orient="index").reset_index()
+                comments_df.columns = ["User", "Comments"]
                 comments_df = comments_df.set_index("User")
                 st.dataframe(comments_df.sort_values(by="Comments", ascending=False))
 
             col3 = st.columns(1)[0]
             with col3:
                 st.subheader("Comments by resource_uuid:")
-                resource_comments_df = pd.DataFrame(
-                    list(resource_comments.items()),
-                    columns=["Resource UUID", "Comments"],
-                )
+                resource_comments_df = pd.DataFrame.from_dict(
+                    resource_comments, orient="index"
+                ).reset_index()
+                resource_comments_df.columns = ["Resource UUID", "Comments"]
                 resource_comments_df = resource_comments_df.sort_values(
                     by="Comments", ascending=False
                 )
@@ -166,10 +166,11 @@ def main():
             col4 = st.columns(1)[0]
             with col4:
                 st.subheader("Collected by resource_uuid:")
-                resource_collected_df = pd.DataFrame(
-                    list(resource_collected.items()),
-                    columns=["Resource UUID", "Collected"],
-                )
+                resource_collected_df = pd.DataFrame.from_dict(
+                    resource_collected, orient="index"
+                ).reset_index()
+                resource_collected_df.columns = ["Resource UUID", "Collected"]
+
                 resource_collected_df = resource_collected_df.sort_values(
                     by="Collected", ascending=False
                 )
