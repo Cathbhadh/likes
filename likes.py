@@ -74,11 +74,10 @@ def get_most_interacted_resource(resource_interaction, label):
     return most_interacted_resource_uuid, most_interacted_count
 
 def print_stats(stats_dict, label):
-    st.subheader(f"{label} by User:")
     stats_df = pd.DataFrame.from_dict(stats_dict, orient="index").reset_index()
     stats_df.columns = ["User", label]
     stats_df = stats_df.sort_values(by=label, ascending=False)
-    st.dataframe(stats_df)
+    st.dataframe(stats_df, hide_index=True)
 
 def load_data(session):
     offset = 0
@@ -132,9 +131,10 @@ def main():
             st.write(f"Total Likes: {total_likes}")
             st.write(f"Total Comments: {total_comments}")
 
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
 
             with col1:
+                st.subheader("Likes by User:")
                 likes_df = pd.DataFrame(
                     {
                         "User": list(user_likes.keys()),
@@ -142,15 +142,19 @@ def main():
                     }
                 ).set_index("User")
                 likes_df = likes_df.sort_values(by="Likes", ascending=False)
-                st.dataframe(likes_df)
+                st.dataframe(likes_df, hide_index=True)
 
             with col2:
+                st.subheader("Comments by User:")
                 print_stats(user_comments, "Comments")
 
-            col3, col4 = st.columns(2)
-
             with col3:
+                st.subheader("Comments by Resource UUID:")
                 print_stats(resource_comments, "Comments")
+
+            col4, col5 = st.columns(2)
+
+            with col4:
                 most_commented_resource_uuid, most_comments_count = get_most_interacted_resource(
                     resource_comments, "Comments"
                 )
@@ -159,8 +163,10 @@ def main():
                 st.write(f"Post ID: {most_commented_resource_uuid}")
                 st.write(f"Number of Comments: {most_comments_count}")
 
-            with col4:
+            with col5:
+                st.subheader("Collected by Resource UUID:")
                 print_stats(resource_collected, "Collected")
+
                 most_collected_resource_uuid, most_collected_count = get_most_interacted_resource(
                     resource_collected, "Collected"
                 )
@@ -185,15 +191,15 @@ def main():
                 pd.Series(user_comments.values()), percentiles
             )
 
-            col5, col6 = st.columns(2)
+            col6, col7 = st.columns(2)
 
-            with col5:
+            with col6:
                 st.subheader("Likes Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_likes):
                     rounded_value = round(value, 2)
                     st.write(f"{percentile}th percentile: {rounded_value}")
 
-            with col6:
+            with col7:
                 st.subheader("Comments Percentiles")
                 for percentile, value in zip(percentiles, percentiles_values_comments):
                     rounded_value = round(value, 2)
@@ -218,4 +224,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
