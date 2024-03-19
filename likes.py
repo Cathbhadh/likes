@@ -74,44 +74,31 @@ def get_followers(session, user_id):
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
-    users_with_likes = set(likes_df["actor_uuid"].unique())
-    followers_no_likes = list(follower_names - users_with_likes)
-    users_with_no_likes_count = len(followers_no_likes)
-    total_followers = len(follower_names)
-    st.write(f"Users who didn't leave any likes: {followers_no_likes}")
-    st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
+    likes_df['is_follower'] = likes_df['actor_uuid'].isin(follower_names)
+    likes_df = likes_df.astype({'actor_uuid': 'category', 'is_follower': 'bool'})
+    likes_summary = likes_df.groupby(['is_follower'])['actor_uuid'].agg(['count', 'nunique'])
+    likes_summary.columns = ['likes_count', 'unique_users']
+    styled_summary = likes_summary.style.format({'likes_count': '{:,}', 'unique_users': '{:,}'})
+    st.subheader("Likes Summary")
+    st.dataframe(styled_summary)
+    follower_likes_dist = likes_df[likes_df['is_follower']].groupby('actor_uuid')['actor_uuid'].count().reset_index()
+    follower_likes_dist.columns = ['follower', 'likes']
+    follower_likes_dist = follower_likes_dist[follower_likes_dist['likes'] > 0]
+    follower_likes_summary = follower_likes_dist.groupby('likes')['follower'].agg(['count', 'nunique'])
+    follower_likes_summary.columns = ['follower_count', 'unique_followers']
+    follower_likes_summary['percentage'] = (follower_likes_summary['follower_count'] / len(follower_names)) * 100
 
-    # Count likes by followers and non-followers
-    likes_by_followers = likes_df[likes_df["actor_uuid"].isin(follower_names)].shape[0]
-    likes_by_non_followers = likes_df[~likes_df["actor_uuid"].isin(follower_names)].shape[0]
-    total_likes = likes_by_followers + likes_by_non_followers
-
-    st.write(f"Likes by followers: {likes_by_followers} ({likes_by_followers/total_likes*100:.2f}%)")
-    st.write(f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)")
-
-    # Create a dataframe for follower like counts
-    follower_like_counts_df = pd.DataFrame({'follower': followers})
-    follower_like_counts_df['likes'] = follower_like_counts_df['follower'].map(follower_like_counts)
-    follower_like_counts_df = follower_like_counts_df[follower_like_counts_df['likes'] > 0]
-
-    # Create a dataframe for non-follower like counts
-    non_follower_like_counts_df = likes_df[~likes_df["actor_uuid"].isin(follower_names)]["actor_uuid"].value_counts().reset_index()
-    non_follower_like_counts_df.columns = ['actor', 'likes']
+    non_follower_likes_dist = likes_df[~likes_df['is_follower']].groupby('actor_uuid')['actor_uuid'].count().reset_index()
+    non_follower_likes_dist.columns = ['non_follower', 'likes']
+    non_follower_likes_summary = non_follower_likes_dist.groupby('likes')['non_follower'].agg(['count', 'nunique'])
+    non_follower_likes_summary.columns = ['non_follower_count', 'unique_non_followers']
+    non_follower_likes_summary['percentage'] = (non_follower_likes_summary['non_follower_count'] / likes_summary.loc[False, 'unique_users']) * 100
 
     st.subheader("Distribution of Likes by Followers")
-    follower_likes_summary = follower_like_counts_df.groupby('likes')['follower'].count().reset_index()
-    follower_likes_summary.columns = ['likes', 'count']
-    follower_likes_summary['percentage'] = (follower_likes_summary['count'] / total_followers) * 100
-
     st.dataframe(follower_likes_summary)
 
     st.subheader("Distribution of Likes by Non-Followers")
-    non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
-    non_follower_likes_summary.columns = ['likes', 'count']
-    non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
-
     st.dataframe(non_follower_likes_summary)
-
 
 
 def load_data(session):
