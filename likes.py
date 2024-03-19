@@ -75,19 +75,28 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
     likes_df['is_follower'] = likes_df['actor_uuid'].isin(follower_names)
+
+    # Optimize memory usage
     likes_df = likes_df.astype({'actor_uuid': 'category', 'is_follower': 'bool'})
+
+    # Use pandas groupby and agg functions
     likes_summary = likes_df.groupby(['is_follower'])['actor_uuid'].agg(['count', 'nunique'])
     likes_summary.columns = ['likes_count', 'unique_users']
+
+    # Use pandas styler for formatting output
     styled_summary = likes_summary.style.format({'likes_count': '{:,}', 'unique_users': '{:,}'})
     st.subheader("Likes Summary")
     st.dataframe(styled_summary)
-    follower_likes_dist = likes_df[likes_df['is_follower']].drop('actor_uuid', axis=1).groupby('actor_uuid')['actor_uuid'].count().reset_index(name='follower')
+
+    # Use pandas groupby and agg functions for distribution
+    follower_likes_dist = likes_df[likes_df['is_follower']].drop('actor_uuid', axis=1).reset_index().groupby(level=0)['index'].count().reset_index(name='follower')
     follower_likes_dist.columns = ['follower', 'likes']
     follower_likes_dist = follower_likes_dist[follower_likes_dist['likes'] > 0]
     follower_likes_summary = follower_likes_dist.groupby('likes')['follower'].agg(['count', 'nunique'])
     follower_likes_summary.columns = ['follower_count', 'unique_followers']
     follower_likes_summary['percentage'] = (follower_likes_summary['follower_count'] / len(follower_names)) * 100
-    non_follower_likes_dist = likes_df[~likes_df['is_follower']].drop('actor_uuid', axis=1).groupby('actor_uuid')['actor_uuid'].count(observed=False).reset_index(name='non_follower')
+
+    non_follower_likes_dist = likes_df[~likes_df['is_follower']].drop('actor_uuid', axis=1).reset_index().groupby(level=0)['index'].count(observed=False).reset_index(name='non_follower')
     non_follower_likes_dist.columns = ['non_follower', 'likes']
     non_follower_likes_summary = non_follower_likes_dist.groupby('likes')['non_follower'].agg(['count', 'nunique'])
     non_follower_likes_summary.columns = ['non_follower_count', 'unique_non_followers']
