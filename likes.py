@@ -55,9 +55,13 @@ def get_followers(session, user_id, limit=100):
 
 def analyze_likes(user_likes, followers):
     likes_df = generate_likes_dataframe(user_likes)
-    
+
     # Users who didn't leave any likes
-    no_likes_users = [user for user in user_likes.keys() if sum(user_likes[user].values()) == 0]
+    user_likes_counts = {}
+    for user_like in user_likes:
+        actor_uuid = user_like["actor_uuid"]
+        user_likes_counts[actor_uuid] = user_likes_counts.get(actor_uuid, 0) + 1
+    no_likes_users = [actor_uuid for actor_uuid, count in user_likes_counts.items() if count == 0]
     st.write(f"Users who didn't leave any likes: {no_likes_users}")
 
     # Percentage of followers who left different numbers of likes
@@ -93,6 +97,7 @@ def analyze_likes(user_likes, followers):
     non_follower_like_proportion = 100 - follower_like_proportion
     st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
     st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
+
 
 
 
