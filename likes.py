@@ -152,10 +152,15 @@ def main():
 
         with col1:
             st.subheader("Likes by user:")
+            likes_by_user = {}
+            for user_like in user_likes:
+                actor_uuid = user_like["actor_uuid"]
+                likes_by_user[actor_uuid] = likes_by_user.get(actor_uuid, 0) + 1
+
             likes_df = pd.DataFrame(
                 {
-                    "User": list(user_likes.keys()),
-                    "Likes": [sum(counter.values()) for counter in user_likes.values()],
+                    "User": list(likes_by_user.keys()),
+                    "Likes": list(likes_by_user.values()),
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
@@ -167,7 +172,7 @@ def main():
             comments_df = comments_df.rename(columns={'index': 'User'})
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
-
+            
         col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
