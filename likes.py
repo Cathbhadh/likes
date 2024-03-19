@@ -90,9 +90,8 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     st.write(f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)")
 
     # Create a dataframe for follower like counts
-    follower_like_counts_series = pd.Series(follower_like_counts)
-    follower_like_counts_df = follower_like_counts_series[follower_like_counts_series.index.isin(follower_names)].reset_index()
-    follower_like_counts_df.columns = ['follower', 'likes']
+    follower_like_counts_df = pd.DataFrame({'follower': followers})
+    follower_like_counts_df['likes'] = follower_like_counts_df['follower'].map(follower_like_counts)
     follower_like_counts_df = follower_like_counts_df[follower_like_counts_df['likes'] > 0]
 
     # Create a dataframe for non-follower like counts
@@ -112,8 +111,6 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
 
     st.dataframe(non_follower_likes_summary)
-
-
 
 
 
