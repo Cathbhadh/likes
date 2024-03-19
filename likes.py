@@ -55,45 +55,32 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-def get_followers(session, user_id, limit=500):
-    followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
-    params = {"offset": 0, "limit": limit, "width": 600, "include_nsfw": True}
-    resp = session.get(followers_url, params=params)
-    follower_data = resp.json()
-    followers = [user["profile"]["name"] for user in follower_data["users"]]
+def get_followers(session, user_id):
+    followers = []
+    offset = 0
+    limit = 500
+    while True:
+        followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
+        params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
+        resp = session.get(followers_url, params=params)
+        follower_data = resp.json()
+        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+        if len(follower_data["users"]) < limit:
+            break
+        offset += limit
     return followers
+
 
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
-
-    # Create a set of follower names
     follower_names = set(followers)
-
-    # Set of users who left at least one like
     users_with_likes = set(likes_df["actor_uuid"].unique())
-
-    # Followers who didn't leave any likes
-    followers_no_likes = follower_names - users_with_likes
+    followers_no_likes = list(follower_names - users_with_likes)
     users_with_no_likes_count = len(followers_no_likes)
     total_followers = len(follower_names)
+    st.write(f"Users who didn't leave any likes: {followers_no_likes}")
     st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
-
-    # Convert Counter to pandas Series
     follower_like_counts_series = pd.Series(follower_like_counts)
-
-    if follower_like_counts_series.empty:
-        st.warning("No followers have left any likes. Skipping percentile analysis.")
-    else:
-        like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 99, 100]
-        for pct in like_count_percentiles:
-            try:
-                count = follower_like_counts_series.quantile(pct/100)
-                follower_counts_below_threshold = follower_like_counts_series[follower_like_counts_series.index.isin(follower_names)][follower_like_counts_series <= count]
-                pct_followers = len(follower_counts_below_threshold) / total_followers * 100
-                st.write(f"{pct}th percentile of likes: {count:.2f}, {pct_followers:.2f}% of followers left <= {count} likes")
-            except Exception as e:
-                st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
-
 
 
 
@@ -103,7 +90,7 @@ def load_data(session):
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
-    follower_like_counts = Counter()  # Initialize follower_like_counts
+    follower_like_counts = Counter()
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -112,7 +99,6 @@ def load_data(session):
         for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
                 process_liked_notification(notification, user_likes)
-                # Update follower_like_counts
                 name = notification["user_profile"]["name"]
                 follower_like_counts[name] += 1
 
@@ -257,3 +243,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
