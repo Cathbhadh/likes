@@ -98,7 +98,7 @@ def analyze_likes(user_likes, followers):
 
 def load_data(session):
     offset = 0
-    user_likes = defaultdict(Counter)
+    user_likes = []  # Use a regular list instead of defaultdict
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
@@ -125,7 +125,6 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments, resource_comments, resource_collected
-
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
