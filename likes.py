@@ -88,10 +88,12 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         for pct in like_count_percentiles:
             try:
                 count = follower_like_counts_series.quantile(pct/100)
-                pct_followers = len(follower_like_counts_series[follower_like_counts_series <= count]) / total_followers * 100
+                follower_counts_below_threshold = follower_like_counts_series[follower_like_counts_series.index.isin(follower_names)][follower_like_counts_series <= count]
+                pct_followers = len(follower_counts_below_threshold) / total_followers * 100
                 st.write(f"{pct}th percentile of likes: {count:.2f}, {pct_followers:.2f}% of followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
+
 
 
 
