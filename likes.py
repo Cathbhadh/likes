@@ -33,17 +33,19 @@ def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
-def generate_likes_dataframe(user_likes):
+def generate_likes_dataframe(user_likes, followers):
     liked_data = []
 
     for user, liked_posts in user_likes.items():
         for (resource_uuid, created_at), count in liked_posts.items():
+            is_follower = user in followers
             liked_data.extend(
                 [
                     {
                         "actor_uuid": user,
                         "resource_uuid": resource_uuid,
                         "created_at": created_at,
+                        "is_follower": is_follower,
                     }
                 ]
                 * count
@@ -54,6 +56,7 @@ def generate_likes_dataframe(user_likes):
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
 
     return likes_df
+
 
 def get_followers(session, user_id):
     followers = []
@@ -101,14 +104,14 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     follower_likes_summary.columns = ['likes', 'count']
     follower_likes_summary['percentage'] = (follower_likes_summary['count'] / total_followers) * 100
 
-    st.dataframe(follower_likes_summary)
+    st.dataframe(follower_likes_summary, hide_index=True)
 
     st.subheader("Distribution of Likes by Non-Followers")
     non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
     non_follower_likes_summary.columns = ['likes', 'count']
     non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
 
-    st.dataframe(non_follower_likes_summary)
+    st.dataframe(non_follower_likes_summary, hide_index=True)
 
 def load_data(session):
     offset = 0
@@ -254,11 +257,10 @@ def main():
             for percentile, value in zip(percentiles, percentiles_values_comments):
                 rounded_value = round(value, 2)
                 st.write(f"{percentile}th percentile: {rounded_value}")
-
-        likes_df = generate_likes_dataframe(user_likes)
+        followers = get_followers(session, user_id)
+        likes_df = generate_likes_dataframe(user_likes, followers)
         st.subheader("Likes by User:")
         st.dataframe(likes_df, hide_index=True)
-        followers = get_followers(session, user_id)
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
