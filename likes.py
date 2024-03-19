@@ -80,6 +80,15 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     total_followers = len(follower_names)
     st.write(f"Users who didn't leave any likes: {followers_no_likes}")
     st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
+
+    # Count likes by followers and non-followers
+    likes_by_followers = likes_df[likes_df["actor_uuid"].isin(follower_names)].shape[0]
+    likes_by_non_followers = likes_df[~likes_df["actor_uuid"].isin(follower_names)].shape[0]
+    total_likes = likes_by_followers + likes_by_non_followers
+
+    st.write(f"Likes by followers: {likes_by_followers} ({likes_by_followers/total_likes*100:.2f}%)")
+    st.write(f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)")
+
     follower_like_counts_series = pd.Series(follower_like_counts)
 
 
