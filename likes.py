@@ -155,8 +155,8 @@ def main():
 
         with col2:
             st.subheader("Comments by user:")
-            comments_df = pd.DataFrame.from_dict(user_comments, orient="index").reset_index()
-            comments_df.columns = ["User", "Comments"]
+            comments_df = pd.DataFrame.from_dict(user_comments, orient="index", columns=["Comments"]).reset_index()
+            comments_df = comments_df.rename(columns={'index': 'User'})
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
 
