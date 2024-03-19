@@ -55,7 +55,7 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-def get_followers(session, user_id, limit=100):
+def get_followers(session, user_id, limit=500):
     followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
     params = {"offset": 0, "limit": limit, "width": 600, "include_nsfw": True}
     resp = session.get(followers_url, params=params)
