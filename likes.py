@@ -101,14 +101,14 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     follower_likes_summary.columns = ['likes', 'count']
     follower_likes_summary['percentage'] = (follower_likes_summary['count'] / total_followers) * 100
 
-    st.dataframe(follower_likes_summary)
+    st.dataframe(follower_likes_summary, hide_index = True)
 
     st.subheader("Distribution of Likes by Non-Followers")
     non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
     non_follower_likes_summary.columns = ['likes', 'count']
     non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
 
-    st.dataframe(non_follower_likes_summary)
+    st.dataframe(non_follower_likes_summary, hide_index = True)
 
 def load_data(session, followers):
     offset = 0
@@ -119,7 +119,6 @@ def load_data(session, followers):
     follower_like_counts = Counter()
     user_is_follower = defaultdict(bool)
 
-    # Mark the followers as True in the user_is_follower dictionary
     for follower in followers:
         user_is_follower[follower] = True
 
@@ -268,9 +267,7 @@ def main():
         likes_df = generate_likes_dataframe(user_likes)
         st.subheader("Likes by User:")
         st.dataframe(likes_df, hide_index=True)
-        
-        for follower in followers:
-            user_is_follower[follower] = True  # Mark the follower as True
+
 
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
