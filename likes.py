@@ -78,18 +78,20 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     total_followers = len(follower_names)
     st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
 
-    if not follower_like_counts:
+    # Convert Counter to pandas Series
+    follower_like_counts_series = pd.Series(follower_like_counts)
+
+    if follower_like_counts_series.empty:
         st.warning("No followers have left any likes. Skipping percentile analysis.")
     else:
         like_count_percentiles = list(set([0, 1, 5, 10, 25, 50, 75, 90, 95, 100]))
         for pct in like_count_percentiles[1:]:
             try:
-                count = follower_like_counts.quantile(pct/100)
-                pct_users = len([value for value in follower_like_counts.values() if value <= count])
+                count = follower_like_counts_series.quantile(pct/100)
+                pct_users = len(follower_like_counts_series[follower_like_counts_series <= count])
                 st.write(f"{pct_users} ({pct_users/total_followers*100:.2f}%) out of {total_followers} followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
-
 
 
 def load_data(session):
