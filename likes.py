@@ -110,14 +110,18 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
     st.dataframe(non_follower_likes_summary)
 
-def load_data(session):
+def load_data(session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
-    user_is_follower = defaultdict(bool)  
+    user_is_follower = defaultdict(bool)
+
+    # Mark the followers as True in the user_is_follower dictionary
+    for follower in followers:
+        user_is_follower[follower] = True
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -144,12 +148,14 @@ def load_data(session):
 
     return user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower
 
+
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
 
     if access_token and user_id:
         session = authenticate_with_token(access_token)
+        followers = get_followers(session, user_id)
 
         start_time = time.perf_counter()
         (
@@ -262,7 +268,7 @@ def main():
         likes_df = generate_likes_dataframe(user_likes)
         st.subheader("Likes by User:")
         st.dataframe(likes_df, hide_index=True)
-        followers = get_followers(session, user_id)
+        
         for follower in followers:
             user_is_follower[follower] = True  # Mark the follower as True
 
