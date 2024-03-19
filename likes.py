@@ -74,40 +74,41 @@ def get_followers(session, user_id):
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
-    likes_df['is_follower'] = likes_df['actor_uuid'].isin(follower_names)
+    users_with_likes = set(likes_df["actor_uuid"].unique())
+    followers_no_likes = list(follower_names - users_with_likes)
+    users_with_no_likes_count = len(followers_no_likes)
+    total_followers = len(follower_names)
+    st.write(f"Users who didn't leave any likes: {followers_no_likes}")
+    st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
 
-    # Optimize memory usage
-    likes_df = likes_df.astype({'actor_uuid': 'category', 'is_follower': 'bool'})
+    likes_by_followers = likes_df[likes_df["actor_uuid"].isin(follower_names)].shape[0]
+    likes_by_non_followers = likes_df[~likes_df["actor_uuid"].isin(follower_names)].shape[0]
+    total_likes = likes_by_followers + likes_by_non_followers
 
-    # Use pandas groupby and agg functions
-    likes_summary = likes_df.groupby(['is_follower'])['actor_uuid'].agg(['count', 'nunique'])
-    likes_summary.columns = ['likes_count', 'unique_users']
+    st.write(f"Likes by followers: {likes_by_followers} ({likes_by_followers/total_likes*100:.2f}%)")
+    st.write(f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)")
 
-    # Use pandas styler for formatting output
-    styled_summary = likes_summary.style.format({'likes_count': '{:,}', 'unique_users': '{:,}'})
-    st.subheader("Likes Summary")
-    st.dataframe(styled_summary)
+    follower_like_counts_series = pd.Series(follower_like_counts)
+    follower_like_counts_df = follower_like_counts_series[follower_like_counts_series.index.isin(follower_names)].reset_index()
+    follower_like_counts_df.columns = ['follower', 'likes']
+    follower_like_counts_df = follower_like_counts_df[follower_like_counts_df['likes'] > 0]
 
-    # Use pandas groupby and agg functions for distribution
-    follower_likes_dist = likes_df[likes_df['is_follower']].drop('actor_uuid', axis=1).reset_index().groupby(level=0)['index'].count().reset_index(name='follower')
-    follower_likes_dist.columns = ['follower', 'likes']
-    follower_likes_dist = follower_likes_dist[follower_likes_dist['likes'] > 0]
-    follower_likes_summary = follower_likes_dist.groupby('likes')['follower'].agg(['count', 'nunique'])
-    follower_likes_summary.columns = ['follower_count', 'unique_followers']
-    follower_likes_summary['percentage'] = (follower_likes_summary['follower_count'] / len(follower_names)) * 100
-
-    non_follower_likes_dist = likes_df[~likes_df['is_follower']].drop('actor_uuid', axis=1).reset_index().groupby(level=0)['index'].count().reset_index(name='non_follower')
-    non_follower_likes_dist.columns = ['non_follower', 'likes']
-    non_follower_likes_summary = non_follower_likes_dist.groupby('likes')['non_follower'].agg(['count', 'nunique'])
-    non_follower_likes_summary.columns = ['non_follower_count', 'unique_non_followers']
-    non_follower_likes_summary['percentage'] = (non_follower_likes_summary['non_follower_count'] / likes_summary.loc[False, 'unique_users']) * 100
+    non_follower_like_counts_df = likes_df[~likes_df["actor_uuid"].isin(follower_names)]["actor_uuid"].value_counts().reset_index()
+    non_follower_like_counts_df.columns = ['actor', 'likes']
 
     st.subheader("Distribution of Likes by Followers")
+    follower_likes_summary = follower_like_counts_df.groupby('likes')['follower'].count().reset_index()
+    follower_likes_summary.columns = ['likes', 'count']
+    follower_likes_summary['percentage'] = (follower_likes_summary['count'] / total_followers) * 100
+
     st.dataframe(follower_likes_summary)
 
     st.subheader("Distribution of Likes by Non-Followers")
-    st.dataframe(non_follower_likes_summary)
+    non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
+    non_follower_likes_summary.columns = ['likes', 'count']
+    non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
 
+    st.dataframe(non_follower_likes_summary)
 
 def load_data(session):
     offset = 0
