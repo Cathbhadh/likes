@@ -65,44 +65,33 @@ def get_followers(session, user_id, limit=500):
 
 def analyze_likes(user_likes, followers):
     likes_df = generate_likes_dataframe(user_likes)
+
+    # Create a set of follower names
     follower_names = set(followers)
+
+    # Set of users who left at least one like
     users_with_likes = set(likes_df["actor_uuid"].unique())
+
+    # Followers who didn't leave any likes
     followers_no_likes = follower_names - users_with_likes
-    st.write(f"Followers who didn't leave any likes: {list(followers_no_likes)}")
-    follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
-    follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
-    
+    users_with_no_likes_count = len(followers_no_likes)
+    total_followers = len(follower_names)
+    st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
+
     if follower_like_counts.dtypes != 'int64':
         st.warning("Error: Follower like counts are not numeric. Skipping percentile analysis.")
     elif len(follower_like_counts) == 0:
         st.warning("No followers have left any likes. Skipping percentile analysis.")
     else:
         like_count_percentiles = list(set([0, 1, 5, 10, 25, 50, 75, 90, 95, 100]))
-        users_with_zero_likes = len(follower_like_counts[follower_like_counts == 0])
-        total_users = len(follower_like_counts)
-        st.write(f"{users_with_zero_likes} ({users_with_zero_likes/total_users*100:.2f}%) out of {total_users} followers left 0 likes")
         for pct in like_count_percentiles[1:]:
             try:
                 count = follower_like_counts.quantile(pct/100)
                 pct_users = len(follower_like_counts[follower_like_counts <= count])
-                st.write(f"{pct_users} ({pct_users/total_users*100:.2f}%) out of {total_users} followers left <= {count} likes")
+                st.write(f"{pct_users} ({pct_users/total_followers*100:.2f}%) out of {total_followers} followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
 
-
-    if len(follower_likes) == 0:
-        follower_likes_count = 0
-        follower_like_proportion = 0
-    else:
-        follower_likes_count = len(follower_likes)
-        total_likes_count = len(likes_df)
-        follower_like_proportion = follower_likes_count / total_likes_count * 100
-
-    total_likes_count = len(likes_df)
-    follower_like_proportion = follower_likes_count / total_likes_count * 100 if total_likes_count > 0 else 0
-    non_follower_like_proportion = 100 - follower_like_proportion
-    st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
-    st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
 
 
 
