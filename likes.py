@@ -158,6 +158,7 @@ def main():
             resource_comments,
             resource_collected,
             follower_like_counts,
+            user_is_follower,
         ) = load_data(session)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
