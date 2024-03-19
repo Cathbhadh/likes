@@ -90,6 +90,10 @@ def analyze_likes(user_likes, followers):
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
 
     # Proportion of likes from followers vs non-followers
+    if len(follower_likes) == 0:
+        follower_likes_count = 0
+    else:
+        follower_likes_count = len(follower_likes)
 
 
 def load_data(session):
