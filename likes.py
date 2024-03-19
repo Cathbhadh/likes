@@ -84,15 +84,14 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     if follower_like_counts_series.empty:
         st.warning("No followers have left any likes. Skipping percentile analysis.")
     else:
-        like_count_percentiles = list(set([0, 1, 5, 10, 25, 50, 75, 90, 95, 100]))
-        for pct in like_count_percentiles[1:]:
+        like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 99, 100]
+        for pct in like_count_percentiles:
             try:
                 count = follower_like_counts_series.quantile(pct/100)
-                pct_users = len(follower_like_counts_series[follower_like_counts_series <= count])
-                st.write(f"{pct_users} ({pct_users/total_followers*100:.2f}%) out of {total_followers} followers left <= {count} likes")
+                pct_followers = len(follower_like_counts_series[follower_like_counts_series <= count]) / total_followers * 100
+                st.write(f"{pct}th percentile of likes: {count:.2f}, {pct_followers:.2f}% of followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
-
 
 
 
