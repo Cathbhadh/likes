@@ -109,6 +109,38 @@ def load_data(session):
 
     return user_likes, user_comments, resource_comments, resource_collected
 
+def get_followers(session, user_id, limit=100):
+    followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
+    params = {"offset": 0, "limit": limit, "width": 600, "include_nsfw": True}
+    resp = session.get(followers_url, params=params)
+    follower_data = resp.json()
+    followers = [user["user"]["uuid"] for user in follower_data["users"]]
+    return followers
+
+def analyze_likes(user_likes, followers):
+    likes_df = generate_likes_dataframe(user_likes)
+    
+    # Users who didn't leave any likes
+    no_likes_users = [user for user in user_likes.keys() if sum(user_likes[user].values()) == 0]
+    st.write(f"Users who didn't leave any likes: {no_likes_users}")
+
+    # Percentage of followers who left different numbers of likes
+    follower_likes = likes_df[likes_df["actor_uuid"].isin(followers)]
+    follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
+    like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 100]
+    for pct in like_count_percentiles:
+        count = follower_like_counts.quantile(pct/100)
+        pct_users = len(follower_like_counts[follower_like_counts <= count]) / len(follower_like_counts) * 100
+        st.write(f"{pct}% of followers left <= {count} likes")
+
+    # Proportion of likes from followers vs non-followers
+    follower_likes_count = len(follower_likes)
+    total_likes_count = len(likes_df)
+    follower_like_proportion = follower_likes_count / total_likes_count * 100
+    non_follower_like_proportion = 100 - follower_like_proportion
+    st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
+    st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
+
 def main():
     access_token = st.text_input("Enter your access token")
 
@@ -233,6 +265,12 @@ def main():
             end_time = time.perf_counter()
             execution_time = end_time - start_time
             st.write(f"Execution time: {execution_time} seconds")
+        
+        if st.button("Analyze Follower Likes"):
+            user_id = st.text_input("Enter user ID")
+            if user_id:
+                followers = get_followers(session, user_id)
+                analyze_likes(user_likes, followers)
 
     else:
         st.warning("Enter your access token:")
