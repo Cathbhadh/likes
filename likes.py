@@ -95,6 +95,13 @@ def analyze_likes(user_likes, followers):
     else:
         follower_likes_count = len(follower_likes)
 
+    total_likes_count = len(likes_df)
+    follower_like_proportion = follower_likes_count / total_likes_count * 100 if total_likes_count > 0 else 0
+    non_follower_like_proportion = 100 - follower_like_proportion
+    st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
+    st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
+
+
 
 def load_data(session):
     offset = 0
@@ -243,13 +250,9 @@ def main():
 
         followers = get_followers(session, user_id)
         analyze_likes(user_likes, followers)
-        follower_likes_count = len(follower_likes)
-        total_likes_count = len(likes_df)
-        follower_like_proportion = follower_likes_count / total_likes_count * 100 if total_likes_count > 0 else 0
-        non_follower_like_proportion = 100 - follower_like_proportion
-        st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
-        st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
+
         end_time = time.perf_counter()
+        
         execution_time = end_time - start_time
         st.write(f"Execution time: {execution_time} seconds")
 
