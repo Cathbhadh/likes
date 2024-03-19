@@ -16,11 +16,16 @@ def authenticate_with_token(access_token):
     return session
 
 def process_liked_notification(notification, user_likes):
-    name = notification["user_profile"]["name"]
+    actor_uuid = notification["actor_uuid"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
 
-    user_likes[name][(resource_uuid, created_at)] += 1
+    user_likes.append({
+        "actor_uuid": actor_uuid,
+        "resource_uuid": resource_uuid,
+        "created_at": created_at
+    })
+
 
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
@@ -34,22 +39,7 @@ def process_collected_notification(notification, resource_collected):
     resource_collected[resource_uuid] += 1
 
 def generate_likes_dataframe(user_likes):
-    liked_data = []
-
-    for user, liked_posts in user_likes.items():
-        for (resource_uuid, created_at), count in liked_posts.items():
-            liked_data.extend(
-                [
-                    {
-                        "actor_uuid": user,
-                        "resource_uuid": resource_uuid,
-                        "created_at": created_at,
-                    }
-                ]
-                * count
-            )
-
-    likes_df = pd.DataFrame(liked_data)
+    likes_df = pd.DataFrame(user_likes)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
 
@@ -71,7 +61,7 @@ def analyze_likes(user_likes, followers):
     st.write(f"Users who didn't leave any likes: {no_likes_users}")
 
     # Percentage of followers who left different numbers of likes
-    follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
+    follower_likes = likes_df[likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
 
     # Ensure follower_like_counts is a numeric series
