@@ -188,19 +188,19 @@ def main():
             st.dataframe(likes_df, hide_index=True)
 
 
-    with col2:
-        st.subheader("Comments by user:")
-        comments_df = pd.DataFrame(
-            {
-                "User": list(user_comments.keys()),
-                "Comments": list(user_comments.values()),
-                "is_follower": [user_is_follower[user] for user in user_comments.keys()],
-            }
-        )
-        comments_df = comments_df.sort_values(by="Comments", ascending=False)
-        st.dataframe(comments_df, hide_index=True)
+        with col2:
+            st.subheader("Comments by user:")
+            comments_df = pd.DataFrame(
+                {
+                    "User": list(user_comments.keys()),
+                    "Comments": list(user_comments.values()),
+                    "is_follower": [user_is_follower[user] for user in user_comments.keys()],
+                }
+            )
+            comments_df = comments_df.sort_values(by="Comments", ascending=False)
+            st.dataframe(comments_df, hide_index=True)
 
-        col3 = st.columns(1)[0]
+            col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
