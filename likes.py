@@ -60,7 +60,7 @@ def get_followers(session, user_id, limit=100):
     params = {"offset": 0, "limit": limit, "width": 600, "include_nsfw": True}
     resp = session.get(followers_url, params=params)
     follower_data = resp.json()
-    followers = [user["user"]["uuid"] for user in follower_data["users"]]
+    followers = [user["profile"]["name"] for user in follower_data["users"]]
     return followers
 
 def analyze_likes(user_likes, followers):
@@ -71,7 +71,7 @@ def analyze_likes(user_likes, followers):
     st.write(f"Users who didn't leave any likes: {no_likes_users}")
 
     # Percentage of followers who left different numbers of likes
-    follower_likes = likes_df[likes_df["actor_uuid"].isin(followers)]
+    follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
 
     # Ensure follower_like_counts is a numeric series
@@ -92,8 +92,11 @@ def analyze_likes(user_likes, followers):
     # Proportion of likes from followers vs non-followers
     if len(follower_likes) == 0:
         follower_likes_count = 0
+        follower_like_proportion = 0
     else:
         follower_likes_count = len(follower_likes)
+        total_likes_count = len(likes_df)
+        follower_like_proportion = follower_likes_count / total_likes_count * 100
 
     total_likes_count = len(likes_df)
     follower_like_proportion = follower_likes_count / total_likes_count * 100 if total_likes_count > 0 else 0
