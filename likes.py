@@ -16,16 +16,11 @@ def authenticate_with_token(access_token):
     return session
 
 def process_liked_notification(notification, user_likes):
-    actor_uuid = notification["actor_uuid"]
+    name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
 
-    user_likes.append({
-        "actor_uuid": actor_uuid,
-        "resource_uuid": resource_uuid,
-        "created_at": created_at
-    })
-
+    user_likes[name][(resource_uuid, created_at)] += 1
 
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
@@ -39,7 +34,22 @@ def process_collected_notification(notification, resource_collected):
     resource_collected[resource_uuid] += 1
 
 def generate_likes_dataframe(user_likes):
-    likes_df = pd.DataFrame(user_likes)
+    liked_data = []
+
+    for user, liked_posts in user_likes.items():
+        for (resource_uuid, created_at), count in liked_posts.items():
+            liked_data.extend(
+                [
+                    {
+                        "actor_uuid": user,
+                        "resource_uuid": resource_uuid,
+                        "created_at": created_at,
+                    }
+                ]
+                * count
+            )
+
+    likes_df = pd.DataFrame(liked_data)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
 
@@ -50,23 +60,21 @@ def get_followers(session, user_id, limit=100):
     params = {"offset": 0, "limit": limit, "width": 600, "include_nsfw": True}
     resp = session.get(followers_url, params=params)
     follower_data = resp.json()
-    followers = [user["user"]["uuid"] for user in follower_data["users"]]
+    followers = [user["profile"]["name"] for user in follower_data["users"]]
     return followers
-
 
 def analyze_likes(user_likes, followers):
     likes_df = generate_likes_dataframe(user_likes)
-
+    follower_names = set(followers)
+    users_with_likes = set(likes_df["actor_uuid"].unique())
     # Users who didn't leave any likes
-    user_likes_counts = {}
-    for user_like in user_likes:
-        actor_uuid = user_like["actor_uuid"]
-        user_likes_counts[actor_uuid] = user_likes_counts.get(actor_uuid, 0) + 1
-    no_likes_users = [actor_uuid for actor_uuid, count in user_likes_counts.items() if count == 0]
+    followers_no_likes = follower_names - users_with_likes
+    st.write(f"Followers who didn't leave any likes: {list(followers_no_likes)}")
+    no_likes_users = [user for user in user_likes.keys() if sum(user_likes[user].values()) == 0]
     st.write(f"Users who didn't leave any likes: {no_likes_users}")
 
     # Percentage of followers who left different numbers of likes
-    follower_likes = likes_df[likes_df["actor_uuid"].isin(followers)]
+    follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
 
     # Ensure follower_like_counts is a numeric series
@@ -101,10 +109,9 @@ def analyze_likes(user_likes, followers):
 
 
 
-
 def load_data(session):
     offset = 0
-    user_likes = []  # Use a regular list instead of defaultdict
+    user_likes = defaultdict(Counter)
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
@@ -131,7 +138,7 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments, resource_comments, resource_collected
-    
+
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
@@ -147,7 +154,7 @@ def main():
             resource_collected,
         ) = load_data(session)
 
-        total_likes = sum(1 for user_like in user_likes for _ in [None])
+        total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
 
         st.subheader("Total Likes and Comments")
@@ -158,15 +165,10 @@ def main():
 
         with col1:
             st.subheader("Likes by user:")
-            likes_by_user = {}
-            for user_like in user_likes:
-                actor_uuid = user_like["actor_uuid"]
-                likes_by_user[actor_uuid] = likes_by_user.get(actor_uuid, 0) + 1
-
             likes_df = pd.DataFrame(
                 {
-                    "User": list(likes_by_user.keys()),
-                    "Likes": list(likes_by_user.values()),
+                    "User": list(user_likes.keys()),
+                    "Likes": [sum(counter.values()) for counter in user_likes.values()],
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
@@ -178,7 +180,7 @@ def main():
             comments_df = comments_df.rename(columns={'index': 'User'})
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
-            
+
         col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
@@ -256,7 +258,7 @@ def main():
         analyze_likes(user_likes, followers)
 
         end_time = time.perf_counter()
-        
+
         execution_time = end_time - start_time
         st.write(f"Execution time: {execution_time} seconds")
 
