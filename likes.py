@@ -89,7 +89,17 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     st.write(f"Likes by followers: {likes_by_followers} ({likes_by_followers/total_likes*100:.2f}%)")
     st.write(f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)")
 
+    # Count the number of followers who left 1 like, 2 likes, 3 likes, etc.
+    follower_like_counts = follower_like_counts_series[follower_like_counts_series > 0]
+    total_follower_likes = follower_like_counts.sum()
+
+    st.subheader("Distribution of Likes by Followers")
+    for num_likes, count in follower_like_counts.value_counts().sort_index().items():
+        percentage = count / len(follower_names) * 100
+        st.write(f"{count} ({percentage:.2f}%) followers left {num_likes} like(s)")
+
     follower_like_counts_series = pd.Series(follower_like_counts)
+
 
 
 
