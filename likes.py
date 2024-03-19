@@ -63,7 +63,7 @@ def get_followers(session, user_id, limit=500):
     followers = [user["profile"]["name"] for user in follower_data["users"]]
     return followers
 
-def analyze_likes(user_likes, followers):
+def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
 
     # Create a set of follower names
@@ -101,6 +101,7 @@ def load_data(session):
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
+    follower_like_counts = Counter()  # Initialize follower_like_counts
 
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
@@ -109,6 +110,9 @@ def load_data(session):
         for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
                 process_liked_notification(notification, user_likes)
+                # Update follower_like_counts
+                name = notification["user_profile"]["name"]
+                follower_like_counts[name] += 1
 
             if notification["action"] == "commented":
                 process_commented_notification(
@@ -123,7 +127,7 @@ def load_data(session):
 
         offset += LIMIT
 
-    return user_likes, user_comments, resource_comments, resource_collected
+    return user_likes, user_comments, resource_comments, resource_collected, follower_like_counts
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -138,6 +142,7 @@ def main():
             user_comments,
             resource_comments,
             resource_collected,
+            follower_like_counts,
         ) = load_data(session)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
@@ -240,7 +245,7 @@ def main():
         st.subheader("Likes by User:")
         st.dataframe(likes_df, hide_index=True)
         followers = get_followers(session, user_id)
-        analyze_likes(user_likes, followers)
+        analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
         st.write(f"Execution time: {execution_time} seconds")
