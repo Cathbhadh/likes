@@ -200,7 +200,7 @@ def main():
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
 
-            col3 = st.columns(1)[0]
+        col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
