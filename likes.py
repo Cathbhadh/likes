@@ -71,7 +71,7 @@ def analyze_likes(user_likes, followers):
     st.write(f"Followers who didn't leave any likes: {list(followers_no_likes)}")
     follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
-
+    
     if follower_like_counts.dtypes != 'int64':
         st.warning("Error: Follower like counts are not numeric. Skipping percentile analysis.")
     elif len(follower_like_counts) == 0:
@@ -81,15 +81,13 @@ def analyze_likes(user_likes, followers):
         users_with_zero_likes = len(follower_like_counts[follower_like_counts == 0])
         total_users = len(follower_like_counts)
         st.write(f"{users_with_zero_likes} ({users_with_zero_likes/total_users*100:.2f}%) out of {total_users} followers left 0 likes")
-        for pct in like_count_percentiles:
+        for pct in like_count_percentiles[1:]:
             try:
                 count = follower_like_counts.quantile(pct/100)
                 pct_users = len(follower_like_counts[follower_like_counts <= count])
                 st.write(f"{pct_users} ({pct_users/total_users*100:.2f}%) out of {total_users} followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
-
-
 
 
     if len(follower_likes) == 0:
