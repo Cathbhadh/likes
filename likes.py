@@ -78,7 +78,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     followers_no_likes = list(follower_names - users_with_likes)
     users_with_no_likes_count = len(followers_no_likes)
     total_followers = len(follower_names)
-    st.write(f"Users who didn't leave any likes: {followers_no_likes}")
+    st.write(f"Followers who didn't leave any likes: {followers_no_likes}")
     st.write(f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes")
 
     likes_by_followers = likes_df[likes_df["actor_uuid"].isin(follower_names)].shape[0]
@@ -188,12 +188,17 @@ def main():
             st.dataframe(likes_df, hide_index=True)
 
 
-        with col2:
-            st.subheader("Comments by user:")
-            comments_df = pd.DataFrame.from_dict(user_comments, orient="index", columns=["Comments"]).reset_index()
-            comments_df = comments_df.rename(columns={'index': 'User'})
-            comments_df = comments_df.sort_values(by="Comments", ascending=False)
-            st.dataframe(comments_df, hide_index=True)
+    with col2:
+        st.subheader("Comments by user:")
+        comments_df = pd.DataFrame(
+            {
+                "User": list(user_comments.keys()),
+                "Comments": list(user_comments.values()),
+                "is_follower": [user_is_follower[user] for user in user_comments.keys()],
+            }
+        )
+        comments_df = comments_df.sort_values(by="Comments", ascending=False)
+        st.dataframe(comments_df, hide_index=True)
 
         col3 = st.columns(1)[0]
         with col3:
