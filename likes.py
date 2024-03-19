@@ -73,19 +73,20 @@ def analyze_likes(user_likes, followers):
     # Percentage of followers who left different numbers of likes
     follower_likes = likes_df[likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
-    like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 100]
-    for pct in like_count_percentiles:
-        count = follower_like_counts.quantile(pct/100)
-        pct_users = len(follower_like_counts[follower_like_counts <= count]) / len(follower_like_counts) * 100
-        st.write(f"{pct}% of followers left <= {count} likes")
 
-    # Proportion of likes from followers vs non-followers
-    follower_likes_count = len(follower_likes)
-    total_likes_count = len(likes_df)
-    follower_like_proportion = follower_likes_count / total_likes_count * 100
-    non_follower_like_proportion = 100 - follower_like_proportion
-    st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
-    st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
+    # Ensure follower_like_counts is a numeric series
+    if follower_like_counts.dtypes != 'int64':
+        st.warning("Error: Follower like counts are not numeric. Skipping percentile analysis.")
+    else:
+        like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 100]
+        for pct in like_count_percentiles:
+            try:
+                count = follower_like_counts.quantile(pct/100)
+                pct_users = len(follower_like_counts[follower_like_counts <= count]) / len(follower_like_counts) * 100
+                st.write(f"{pct}% of followers left <= {count} likes")
+            except Exception as e:
+                st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
+
 
 def load_data(session):
     offset = 0
@@ -234,6 +235,12 @@ def main():
 
         followers = get_followers(session, user_id)
         analyze_likes(user_likes, followers)
+        follower_likes_count = len(follower_likes)
+        total_likes_count = len(likes_df)
+        follower_like_proportion = follower_likes_count / total_likes_count * 100
+        non_follower_like_proportion = 100 - follower_like_proportion
+        st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
+        st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
