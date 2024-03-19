@@ -95,12 +95,23 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     follower_like_counts_df.columns = ['follower', 'likes']
     follower_like_counts_df = follower_like_counts_df[follower_like_counts_df['likes'] > 0]
 
+    # Create a dataframe for non-follower like counts
+    non_follower_like_counts_df = likes_df[~likes_df["actor_uuid"].isin(follower_names)]["actor_uuid"].value_counts().reset_index()
+    non_follower_like_counts_df.columns = ['actor', 'likes']
+
     st.subheader("Distribution of Likes by Followers")
     follower_likes_summary = follower_like_counts_df.groupby('likes')['follower'].count().reset_index()
     follower_likes_summary.columns = ['likes', 'count']
     follower_likes_summary['percentage'] = (follower_likes_summary['count'] / total_followers) * 100
 
     st.dataframe(follower_likes_summary)
+
+    st.subheader("Distribution of Likes by Non-Followers")
+    non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
+    non_follower_likes_summary.columns = ['likes', 'count']
+    non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
+
+    st.dataframe(non_follower_likes_summary)
 
 
 
