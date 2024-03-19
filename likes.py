@@ -176,10 +176,12 @@ def main():
                 {
                     "User": list(user_likes.keys()),
                     "Likes": [sum(counter.values()) for counter in user_likes.values()],
+                    "is_follower": [user_is_follower[user] for user in user_likes.keys()],
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
             st.dataframe(likes_df, hide_index=True)
+
 
         with col2:
             st.subheader("Comments by user:")
