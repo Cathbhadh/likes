@@ -67,17 +67,11 @@ def analyze_likes(user_likes, followers):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
     users_with_likes = set(likes_df["actor_uuid"].unique())
-    # Users who didn't leave any likes
     followers_no_likes = follower_names - users_with_likes
     st.write(f"Followers who didn't leave any likes: {list(followers_no_likes)}")
-    no_likes_users = [user for user in user_likes.keys() if sum(user_likes[user].values()) == 0]
-    st.write(f"Users who didn't leave any likes: {no_likes_users}")
-
-    # Percentage of followers who left different numbers of likes
     follower_likes = likes_df[likes_df["actor_uuid"].isin(user_likes) & likes_df["actor_uuid"].isin(followers)]
     follower_like_counts = follower_likes.groupby("actor_uuid")["resource_uuid"].count()
 
-    # Ensure follower_like_counts is a numeric series
     if follower_like_counts.dtypes != 'int64':
         st.warning("Error: Follower like counts are not numeric. Skipping percentile analysis.")
     elif len(follower_like_counts) == 0:
@@ -87,12 +81,13 @@ def analyze_likes(user_likes, followers):
         for pct in like_count_percentiles:
             try:
                 count = follower_like_counts.quantile(pct/100)
-                pct_users = len(follower_like_counts[follower_like_counts <= count]) / len(follower_like_counts) * 100
-                st.write(f"{pct}% of followers left <= {count} likes")
+                pct_users = len(follower_like_counts[follower_like_counts <= count])
+                total_users = len(follower_like_counts)
+                st.write(f"{pct_users} ({pct_users/total_users*100:.2f}%) out of {total_users} followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
 
-    # Proportion of likes from followers vs non-followers
+
     if len(follower_likes) == 0:
         follower_likes_count = 0
         follower_like_proportion = 0
@@ -253,12 +248,9 @@ def main():
         likes_df = generate_likes_dataframe(user_likes)
         st.subheader("Likes by User:")
         st.dataframe(likes_df, hide_index=True)
-
         followers = get_followers(session, user_id)
         analyze_likes(user_likes, followers)
-
         end_time = time.perf_counter()
-
         execution_time = end_time - start_time
         st.write(f"Execution time: {execution_time} seconds")
 
