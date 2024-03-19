@@ -125,6 +125,7 @@ def load_data(session):
         offset += LIMIT
 
     return user_likes, user_comments, resource_comments, resource_collected
+    
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
@@ -140,7 +141,7 @@ def main():
             resource_collected,
         ) = load_data(session)
 
-        total_likes = sum(len(posts) for posts in user_likes.values())
+        total_likes = sum(1 for user_like in user_likes for _ in [None])
         total_comments = sum(user_comments.values())
 
         st.subheader("Total Likes and Comments")
