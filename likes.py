@@ -77,6 +77,8 @@ def analyze_likes(user_likes, followers):
     # Ensure follower_like_counts is a numeric series
     if follower_like_counts.dtypes != 'int64':
         st.warning("Error: Follower like counts are not numeric. Skipping percentile analysis.")
+    elif len(follower_like_counts) == 0:
+        st.warning("No followers have left any likes. Skipping percentile analysis.")
     else:
         like_count_percentiles = [0, 1, 5, 10, 25, 50, 75, 90, 95, 100]
         for pct in like_count_percentiles:
@@ -86,6 +88,8 @@ def analyze_likes(user_likes, followers):
                 st.write(f"{pct}% of followers left <= {count} likes")
             except Exception as e:
                 st.warning(f"Error occurred while calculating {pct}th percentile: {e}")
+
+    # Proportion of likes from followers vs non-followers
 
 
 def load_data(session):
@@ -237,11 +241,10 @@ def main():
         analyze_likes(user_likes, followers)
         follower_likes_count = len(follower_likes)
         total_likes_count = len(likes_df)
-        follower_like_proportion = follower_likes_count / total_likes_count * 100
+        follower_like_proportion = follower_likes_count / total_likes_count * 100 if total_likes_count > 0 else 0
         non_follower_like_proportion = 100 - follower_like_proportion
         st.write(f"{follower_like_proportion:.2f}% of likes came from followers")
         st.write(f"{non_follower_like_proportion:.2f}% of likes came from non-followers")
-
         end_time = time.perf_counter()
         execution_time = end_time - start_time
         st.write(f"Execution time: {execution_time} seconds")
