@@ -213,7 +213,7 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text="https://(.*?)\.yodayo\.com"
+                    display_text="https://yodayo\.com\/(.*?)"
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
