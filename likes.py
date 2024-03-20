@@ -208,12 +208,12 @@ def main():
             resource_comments_df.columns = ["Resource UUID", "Comments"]
             resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
 
-            resource_comments_df["Resource UUID"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
+            resource_comments_df["Resource UUID"] = ["https://yodayo.com/posts/" + uuid for uuid in resource_comments_df["Resource UUID"]]
 
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text=resource_comments_df["Resource UUID"].tolist(),  # Convert Series to list
+                    display_text=resource_comments_df["Resource UUID"]  # Use the list of URLs directly
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
