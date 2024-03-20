@@ -206,7 +206,7 @@ def main():
             resource_comments_df = pd.DataFrame.from_dict(
                 resource_comments, orient="index"
             ).reset_index()
-            resource_comments_df.columns = ["User", "Resource UUID", "Comments"]
+            resource_comments_df.columns = ["Resource UUID", "Comments"]
             resource_comments_df = resource_comments_df.sort_values(
                 by="Comments", ascending=False
             )
@@ -217,7 +217,7 @@ def main():
 
             st.subheader("Most Commented Post:")
             st.write(f"Post ID: {most_commented_resource_uuid}")
-            st.write(f"Number of Comments: {most_comments_count}")
+            st.write(f"№ of Comments: {most_comments_count}")
 
         col4 = st.columns(1)[0]
         with col4:
@@ -237,12 +237,12 @@ def main():
 
             st.subheader("Most Collected Post:")
             st.write(f"Post ID: {most_collected_resource_uuid}")
-            st.write(f"Number of Collections: {most_collected_count}")
+            st.write(f"№ of Collections: {most_collected_count}")
 
             st.subheader("User Interaction Statistics:")
-            st.write(f"Number of Users who Liked: {len(user_likes)}")
-            st.write(f"Number of Users who Commented: {len(user_comments)}")
-            st.write(f"Number of Users who Collected: {len(resource_collected)}")
+            st.write(f"№ of Unique Users who Liked: {len(user_likes)}")
+            st.write(f"№ of Unique Users who Commented: {len(user_comments)}")
+            st.write(f"№ of Users who Collected: {len(resource_collected)}")
 
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
@@ -270,7 +270,7 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
-        st.subheader("Likes by User:")
+        st.subheader("Likes by User:", help = "Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
 
 
