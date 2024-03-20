@@ -212,17 +212,14 @@ def main():
             resource_comments_df["Link"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
 
             # Display the dataframe with the new link column
-            st.data_editor(
-                resource_comments_df,
-                column_config={
-                    "Link": st.column_config.LinkColumn(
-                        "Link",
-                        url_pattern="https://yodayo.com/posts/{}",
-                        display_text="Open post"
-                    )
-                },
-                hide_index=True
-            )
+            column_config = {
+                "Link": st.column_config.LinkColumn(
+                    "Link",
+                    url=resource_comments_df["Link"],
+                    display_text="Open post"
+                )
+            }
+            st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
 
         col4 = st.columns(1)[0]
         with col4:
@@ -235,18 +232,14 @@ def main():
             resource_collected_df["Link"] = "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
 
             # Display the dataframe with the new link column
-            st.data_editor(
-                resource_collected_df,
-                column_config={
-                    "Link": st.column_config.LinkColumn(
-                        "Link",
-                        url_pattern="https://yodayo.com/posts/{}",
-                        display_text="Open post"
-                    )
-                },
-                hide_index=True
-            )
-            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
+            column_config = {
+                "Link": st.column_config.LinkColumn(
+                    "Link",
+                    url=resource_collected_df["Link"],
+                    display_text="Open post"
+                )
+            }
+            st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
             st.subheader("Most Collected Post:")
