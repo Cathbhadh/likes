@@ -148,11 +148,6 @@ def load_data(session, followers):
 
     return user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower
 
-def get_post_details(session, resource_uuid):
-    post_url = f"https://api.yodayo.com/v1/posts/{resource_uuid}"
-    resp = session.get(post_url)
-    post_data = resp.json()
-    return post_data.get("title", "")
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -209,12 +204,8 @@ def main():
         col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
-            resource_comments_data = []
-            for resource_uuid, comments_count in resource_comments.items():
-                title = get_post_details(session, resource_uuid)
-                resource_comments_data.append({"Resource UUID": resource_uuid, "Comments": comments_count, "Title": title})
-
-            resource_comments_df = pd.DataFrame(resource_comments_data)
+            resource_comments_df = pd.DataFrame.from_dict(resource_comments, orient="index").reset_index()
+            resource_comments_df.columns = ["Resource UUID", "Comments"]
             resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
 
             # Append URL to "Resource UUID" column
@@ -228,16 +219,12 @@ def main():
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
-    
+
         col4 = st.columns(1)[0]
         with col4:
             st.subheader("Collected by resource_uuid:")
-            resource_collected_data = []
-            for resource_uuid, collected_count in resource_collected.items():
-                title = get_post_details(session, resource_uuid)
-                resource_collected_data.append({"Resource UUID": resource_uuid, "Collected": collected_count, "Title": title})
-
-            resource_collected_df = pd.DataFrame(resource_collected_data)
+            resource_collected_df = pd.DataFrame.from_dict(resource_collected, orient="index").reset_index()
+            resource_collected_df.columns = ["Resource UUID", "Collected"]
             resource_collected_df = resource_collected_df.sort_values(by="Collected", ascending=False)
 
             # Append URL to "Resource UUID" column
@@ -251,6 +238,7 @@ def main():
                 )
             }
             st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)
+
 
             most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
