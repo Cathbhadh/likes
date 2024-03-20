@@ -186,9 +186,9 @@ def main():
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
             link_column = st.column_config.LinkColumn(
-                "User",
-                f"https://www.yodayo.com/user/{likes_df['User']}",  # Use the 'User' column directly
-                display_text="{User}",  # Display the user name as the link text
+                label="User",
+                url=lambda user: f"https://www.yodayo.com/user/{user}",
+                display_text=lambda user: user
             )
             st.dataframe(likes_df, hide_index=True, column_config={"User": link_column})
 
@@ -203,9 +203,9 @@ def main():
             )
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             link_column = st.column_config.LinkColumn(
-                "User",
-                f"https://www.yodayo.com/user/{comments_df['User']}",  # Use the 'User' column directly
-                display_text="{User}",  # Display the user name as the link text
+                label="User",
+                url=lambda user: f"https://www.yodayo.com/user/{user}",
+                display_text=lambda user: user
             )
             st.dataframe(comments_df, hide_index=True, column_config={"User": link_column})
         col3 = st.columns(1)[0]
