@@ -182,14 +182,13 @@ def main():
                     "User": list(user_likes.keys()),
                     "Likes": [sum(counter.values()) for counter in user_likes.values()],
                     "is_follower": [user_is_follower[user] for user in user_likes.keys()],
-                    "user_uuid": list(user_likes.keys()),  # Add this line
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
             link_column = st.column_config.LinkColumn(
                 "User",
-                f"https://www.yodayo.com/user/{likes_df['user_uuid']}",  # Add a URL with user UUID
-                display_text="{user_uuid}",  # Display user UUID as the link text
+                f"https://www.yodayo.com/user/{likes_df['User']}",  # Use the 'User' column directly
+                display_text="{User}",  # Display the user name as the link text
             )
             st.dataframe(likes_df, hide_index=True, column_config={"User": link_column})
 
@@ -200,17 +199,15 @@ def main():
                     "User": list(user_comments.keys()),
                     "Comments": list(user_comments.values()),
                     "is_follower": [user_is_follower[user] for user in user_comments.keys()],
-                    "user_uuid": list(user_comments.keys()),  # Add this line
                 }
             )
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             link_column = st.column_config.LinkColumn(
                 "User",
-                f"https://www.yodayo.com/user/{comments_df['user_uuid']}",  # Add a URL with user UUID
-                display_text="{user_uuid}",  # Display user UUID as the link text
+                f"https://www.yodayo.com/user/{comments_df['User']}",  # Use the 'User' column directly
+                display_text="{User}",  # Display the user name as the link text
             )
             st.dataframe(comments_df, hide_index=True, column_config={"User": link_column})
-
         col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
