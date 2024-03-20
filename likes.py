@@ -213,7 +213,8 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text="https://yodayo\.com/posts/(.*?)/"
+                    display_text="https://yodayo\.com/posts/(.*?)/",
+                    validate="^https://yodayo\.com/posts/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$"
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
