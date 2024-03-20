@@ -200,60 +200,44 @@ def main():
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
 
-            col3 = st.columns(1)[0]
-            with col3:
-                st.subheader("Comments by resource_uuid:")
-                resource_comments_df = pd.DataFrame.from_dict(
-                    resource_comments, orient="index"
-                ).reset_index()
-                resource_comments_df.columns = ["Resource UUID", "Comments"]
-                resource_comments_df = resource_comments_df.sort_values(
-                    by="Comments", ascending=False
-                )
+        col3 = st.columns(1)[0]
+        with col3:
+            st.subheader("Comments by resource_uuid:")
+            resource_comments_df = pd.DataFrame.from_dict(
+                resource_comments, orient="index"
+            ).reset_index()
+            resource_comments_df.columns = ["User", "Resource UUID", "Comments"]
+            resource_comments_df = resource_comments_df.sort_values(
+                by="Comments", ascending=False
+            )
+            st.dataframe(resource_comments_df, hide_index=True)
 
-                # Create a new column with the full URL
-                resource_comments_df["Resource URL"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
+            most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
+            most_comments_count = resource_comments_df.iloc[0]["Comments"]
 
-                # Make the Resource URL column a clickable link
-                link_column = st.column_config.LinkColumn(
-                    "Resource URL", help="Click to open the resource"
-                )
-                st.dataframe(resource_comments_df, column_config={"Resource URL": link_column})
+            st.subheader("Most Commented Post:")
+            st.write(f"Post ID: {most_commented_resource_uuid}")
+            st.write(f"Number of Comments: {most_comments_count}")
 
-                most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
-                most_comments_count = resource_comments_df.iloc[0]["Comments"]
+        col4 = st.columns(1)[0]
+        with col4:
+            st.subheader("Collected by resource_uuid:")
+            resource_collected_df = pd.DataFrame.from_dict(
+                resource_collected, orient="index"
+            ).reset_index()
+            resource_collected_df.columns = ["Resource UUID", "Collected"]
 
-                st.subheader("Most Commented Post:")
-                st.write(f"Post ID: {most_commented_resource_uuid}")
-                st.write(f"Number of Comments: {most_comments_count}")
+            resource_collected_df = resource_collected_df.sort_values(
+                by="Collected", ascending=False
+            )
+            st.dataframe(resource_collected_df, hide_index=True)
 
-            col4 = st.columns(1)[0]
-            with col4:
-                st.subheader("Collected by resource_uuid:")
-                resource_collected_df = pd.DataFrame.from_dict(
-                    resource_collected, orient="index"
-                ).reset_index()
-                resource_collected_df.columns = ["Resource UUID", "Collected"]
+            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
+            most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
-                resource_collected_df = resource_collected_df.sort_values(
-                    by="Collected", ascending=False
-                )
-
-                # Create a new column with the full URL
-                resource_collected_df["Resource URL"] = "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
-
-                # Make the Resource URL column a clickable link
-                link_column = st.column_config.LinkColumn(
-                    "Resource URL", help="Click to open the resource"
-                )
-                st.dataframe(resource_collected_df, column_config={"Resource URL": link_column})
-
-                most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
-                most_collected_count = resource_collected_df.iloc[0]["Collected"]
-
-                st.subheader("Most Collected Post:")
-                st.write(f"Post ID: {most_collected_resource_uuid}")
-                st.write(f"Number of Collections: {most_collected_count}")
+            st.subheader("Most Collected Post:")
+            st.write(f"Post ID: {most_collected_resource_uuid}")
+            st.write(f"Number of Collections: {most_collected_count}")
 
             st.subheader("User Interaction Statistics:")
             st.write(f"Number of Users who Liked: {len(user_likes)}")
