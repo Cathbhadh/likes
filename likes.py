@@ -33,6 +33,33 @@ def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
+
+def add_url_column(self, df):
+    new_df = df[["Resource UUID", "Comments"]].copy()
+    new_df = new_df.convert_dtypes()
+    new_df["url"] = "https://yodayo.com/posts/" + new_df["Resource UUID"]
+    return new_df
+
+def render_dataframe(self, df, header_text, display_text_pattern):
+    column_config = {
+        "url": st.column_config.LinkColumn(
+            "Link", display_text=f"{display_text_pattern} {{Resource UUID}}"
+        ),
+        "Resource UUID": st.column_config.TextColumn(
+            "Resource UUID",
+        ),
+        "Comments": st.column_config.TextColumn(
+            "Comments",
+        )
+    }
+    st.header(header_text)
+    st.dataframe(
+        df[["Resource UUID", "Comments", "url"]],
+        use_container_width=True,
+        hide_index=True,
+        column_config=column_config,
+    )
+
 def generate_likes_dataframe(user_likes):
     liked_data = []
 
@@ -185,8 +212,8 @@ def main():
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
-            st.dataframe(likes_df, hide_index=True)
-
+            likes_df["User"] = ["<a href='https://www.yodayo.com/user/" + user + "' target='_blank'>" + user + "</a>" for user in likes_df["User"]]
+            st.markdown(likes_df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
         with col2:
             st.subheader("Comments by user:")
@@ -198,52 +225,45 @@ def main():
                 }
             )
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
-            st.dataframe(comments_df, hide_index=True)
+            comments_df["User"] = ["<a href='https://www.yodayo.com/user/" + user + "' target='_blank'>" + user + "</a>" for user in comments_df["User"]]
+            st.markdown(comments_df.to_html(escape=False, index=False), unsafe_allow_html=True)        
+            col3 = st.columns(1)[0]
+            with col3:
+                st.subheader("Comments by resource_uuid:")
+                resource_comments_df = pd.DataFrame.from_dict(
+                    resource_comments, orient="index"
+                ).reset_index()
+                resource_comments_df.columns = ["Resource UUID", "Comments"]
+                resource_comments_df = resource_comments_df.sort_values(
+                    by="Comments", ascending=False
+                )
 
-        col3 = st.columns(1)[0]
-        with col3:
-            st.subheader("Comments by resource_uuid:")
-            resource_comments_df = pd.DataFrame.from_dict(
-                resource_comments, orient="index"
-            ).reset_index()
-            resource_comments_df.columns = ["Resource UUID", "Comments"]
-            resource_comments_df = resource_comments_df.sort_values(
-                by="Comments", ascending=False
-            )
-            st.dataframe(resource_comments_df, hide_index=True)
+                # Add the URL column and render the dataframe with clickable links
+                resource_comments_df = add_url_column(resource_comments_df)
+                render_dataframe(resource_comments_df, "Comments by resource_uuid:", "Post ID:")
 
-            most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
-            most_comments_count = resource_comments_df.iloc[0]["Comments"]
+                most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
+                most_comments_count = resource_comments_df.iloc[0]["Comments"]
 
-            st.subheader("Most Commented Post:")
-            st.write(f"Post ID: {most_commented_resource_uuid}")
-            st.write(f"Number of Comments: {most_comments_count}")
+                st.subheader("Most Commented Post:")
+                st.write(f"Post ID: {most_commented_resource_uuid}")
+                st.write(f"Number of Comments: {most_comments_count}")
 
-        col4 = st.columns(1)[0]
-        with col4:
-            st.subheader("Collected by resource_uuid:")
-            resource_collected_df = pd.DataFrame.from_dict(
-                resource_collected, orient="index"
-            ).reset_index()
-            resource_collected_df.columns = ["Resource UUID", "Collected"]
+            col4 = st.columns(1)[0]
+            with col4:
+                st.subheader("Collected by resource_uuid:")
+                resource_collected_df = pd.DataFrame.from_dict(
+                    resource_collected, orient="index"
+                ).reset_index()
+                resource_collected_df.columns = ["Resource UUID", "Collected"]
 
-            resource_collected_df = resource_collected_df.sort_values(
-                by="Collected", ascending=False
-            )
-            st.dataframe(resource_collected_df, hide_index=True)
+                resource_collected_df = resource_collected_df.sort_values(
+                    by="Collected", ascending=False
+                )
 
-            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
-            most_collected_count = resource_collected_df.iloc[0]["Collected"]
-
-            st.subheader("Most Collected Post:")
-            st.write(f"Post ID: {most_collected_resource_uuid}")
-            st.write(f"Number of Collections: {most_collected_count}")
-
-            st.subheader("User Interaction Statistics:")
-            st.write(f"Number of Users who Liked: {len(user_likes)}")
-            st.write(f"Number of Users who Commented: {len(user_comments)}")
-            st.write(f"Number of Users who Collected: {len(resource_collected)}")
-
+                # Add the URL column and render the dataframe with clickable links
+                resource_collected_df = add_url_column(resource_collected_df)
+                render_dataframe(resource_collected_df, "Collected by resource_uuid:", "Post ID:")
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
         st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
