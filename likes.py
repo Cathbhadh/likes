@@ -229,7 +229,7 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text="Open post"
+                    display_text="resource_collected_df["Resource UUID"]"
                 )
             }
             st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)
