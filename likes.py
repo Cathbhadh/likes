@@ -202,6 +202,9 @@ def main():
             st.dataframe(comments_df, hide_index=True)
 
         col3 = st.columns(1)[0]
+        validate_pattern = r'^https://yodayo\.com/posts/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$'
+        uuid_pattern = r'https://yodayo\.com/posts/(.*?)/'
+
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(resource_comments, orient="index").reset_index()
@@ -213,8 +216,8 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text="https://yodayo\.com/posts/(.*?)/",
-                    validate="^https://yodayo\.com/posts/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$"
+                    display_text=uuid_pattern,
+                    validate=validate_pattern
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
