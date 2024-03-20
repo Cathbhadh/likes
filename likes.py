@@ -199,7 +199,8 @@ def main():
             )
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             comments_df["User"] = ["<a href='https://www.yodayo.com/user/" + user + "' target='_blank'>" + user + "</a>" for user in comments_df["User"]]
-            st.markdown(comments_df.to_html(escape=False, index=False), unsafe_allow_html=True)        col3 = st.columns(1)[0]
+            st.markdown(comments_df.to_html(escape=False, index=False), unsafe_allow_html=True)        
+            col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
