@@ -215,7 +215,6 @@ def main():
             column_config = {
                 "Link": st.column_config.LinkColumn(
                     "Link",
-                    url=resource_comments_df["Link"],
                     display_text="Open post"
                 )
             }
@@ -235,11 +234,12 @@ def main():
             column_config = {
                 "Link": st.column_config.LinkColumn(
                     "Link",
-                    url=resource_collected_df["Link"],
                     display_text="Open post"
                 )
             }
             st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)
+
+
             most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
