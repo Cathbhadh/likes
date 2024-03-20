@@ -185,8 +185,8 @@ def main():
                 }
             )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
-            likes_df["User"] = ["<a href='https://www.yodayo.com/user/" + user + "' target='_blank'>" + user + "</a>" for user in likes_df["User"]]
-            st.markdown(likes_df.to_html(escape=False, index=False), unsafe_allow_html=True)
+            st.dataframe(likes_df, hide_index=True)
+
 
         with col2:
             st.subheader("Comments by user:")
@@ -198,9 +198,9 @@ def main():
                 }
             )
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
-            comments_df["User"] = ["<a href='https://www.yodayo.com/user/" + user + "' target='_blank'>" + user + "</a>" for user in comments_df["User"]]
-            st.markdown(comments_df.to_html(escape=False, index=False), unsafe_allow_html=True)        
-            col3 = st.columns(1)[0]
+            st.dataframe(comments_df, hide_index=True)
+
+        col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
