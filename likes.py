@@ -105,7 +105,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         st.dataframe(follower_likes_summary, hide_index = True)
 
     with col2:
-        st.subheader("Distribution of Likes by Non-Followers", help = "Shows what № of followers left what amount of likes and their percentage out of total amount of followers")
+        st.subheader("Distribution of Likes by Non-Followers", help = "Shows what № of non-followers left what amount of likes and their percentage out of total amount of followers")
         non_follower_likes_summary = non_follower_like_counts_df.groupby('likes')['actor'].count().reset_index()
         non_follower_likes_summary.columns = ['likes', 'count']
         non_follower_likes_summary['percentage'] = (non_follower_likes_summary['count'] / (len(users_with_likes) - total_followers)) * 100
@@ -204,35 +204,48 @@ def main():
         col3 = st.columns(1)[0]
         with col3:
             st.subheader("Comments by resource_uuid:")
-            resource_comments_df = pd.DataFrame.from_dict(
-                resource_comments, orient="index"
-            ).reset_index()
+            resource_comments_df = pd.DataFrame.from_dict(resource_comments, orient="index").reset_index()
             resource_comments_df.columns = ["Resource UUID", "Comments"]
-            resource_comments_df = resource_comments_df.sort_values(
-                by="Comments", ascending=False
+            resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
+
+            # Create a new column with links
+            resource_comments_df["Link"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
+
+            # Display the dataframe with the new link column
+            st.data_editor(
+                resource_comments_df,
+                column_config={
+                    "Link": st.column_config.LinkColumn(
+                        "Link",
+                        url_pattern="https://yodayo.com/posts/{}",
+                        display_text="Open post"
+                    )
+                },
+                hide_index=True
             )
-            st.dataframe(resource_comments_df, hide_index=True)
-
-            most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
-            most_comments_count = resource_comments_df.iloc[0]["Comments"]
-
-            st.subheader("Most Commented Post:")
-            st.write(f"Post ID: {most_commented_resource_uuid}")
-            st.write(f"№ of Comments: {most_comments_count}")
 
         col4 = st.columns(1)[0]
         with col4:
             st.subheader("Collected by resource_uuid:")
-            resource_collected_df = pd.DataFrame.from_dict(
-                resource_collected, orient="index"
-            ).reset_index()
+            resource_collected_df = pd.DataFrame.from_dict(resource_collected, orient="index").reset_index()
             resource_collected_df.columns = ["Resource UUID", "Collected"]
+            resource_collected_df = resource_collected_df.sort_values(by="Collected", ascending=False)
 
-            resource_collected_df = resource_collected_df.sort_values(
-                by="Collected", ascending=False
+            # Create a new column with links
+            resource_collected_df["Link"] = "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
+
+            # Display the dataframe with the new link column
+            st.data_editor(
+                resource_collected_df,
+                column_config={
+                    "Link": st.column_config.LinkColumn(
+                        "Link",
+                        url_pattern="https://yodayo.com/posts/{}",
+                        display_text="Open post"
+                    )
+                },
+                hide_index=True
             )
-            st.dataframe(resource_collected_df, hide_index=True)
-
             most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
