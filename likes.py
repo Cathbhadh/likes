@@ -211,11 +211,14 @@ def main():
                     by="Comments", ascending=False
                 )
 
-                # Make the Resource UUID column a clickable link
+                # Create a new column with the full URL
+                resource_comments_df["Resource URL"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
+
+                # Make the Resource URL column a clickable link
                 link_column = st.column_config.LinkColumn(
-                    "Resource UUID", help="Click to open the resource"
+                    "Resource URL", help="Click to open the resource"
                 )
-                st.dataframe(resource_comments_df, column_config={"Resource UUID": link_column})
+                st.dataframe(resource_comments_df, column_config={"Resource URL": link_column})
 
                 most_commented_resource_uuid = resource_comments_df.iloc[0]["Resource UUID"]
                 most_comments_count = resource_comments_df.iloc[0]["Comments"]
@@ -236,11 +239,14 @@ def main():
                     by="Collected", ascending=False
                 )
 
-                # Make the Resource UUID column a clickable link
+                # Create a new column with the full URL
+                resource_collected_df["Resource URL"] = "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
+
+                # Make the Resource URL column a clickable link
                 link_column = st.column_config.LinkColumn(
-                    "Resource UUID", help="Click to open the resource"
+                    "Resource URL", help="Click to open the resource"
                 )
-                st.dataframe(resource_collected_df, column_config={"Resource UUID": link_column})
+                st.dataframe(resource_collected_df, column_config={"Resource URL": link_column})
 
                 most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
                 most_collected_count = resource_collected_df.iloc[0]["Collected"]
@@ -248,7 +254,6 @@ def main():
                 st.subheader("Most Collected Post:")
                 st.write(f"Post ID: {most_collected_resource_uuid}")
                 st.write(f"Number of Collections: {most_collected_count}")
-
 
             st.subheader("User Interaction Statistics:")
             st.write(f"Number of Users who Liked: {len(user_likes)}")
