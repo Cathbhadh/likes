@@ -213,7 +213,7 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text=resource_comments_df["Resource UUID"],  # Use the column values as display text
+                    display_text=resource_comments_df["Resource UUID"].tolist(),  # Convert Series to list
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
