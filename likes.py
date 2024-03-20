@@ -208,14 +208,12 @@ def main():
             resource_comments_df.columns = ["Resource UUID", "Comments"]
             resource_comments_df = resource_comments_df.sort_values(by="Comments", ascending=False)
 
-            # Append URL to "Resource UUID" column
             resource_comments_df["Resource UUID"] = "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
 
-            # Display the dataframe with clickable links in the "Resource UUID" column
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
-                    display_text="Open post"
+                    display_text="Resource UUID"
                 )
             }
             st.dataframe(resource_comments_df, hide_index=True, column_config=column_config)
@@ -226,11 +224,8 @@ def main():
             resource_collected_df = pd.DataFrame.from_dict(resource_collected, orient="index").reset_index()
             resource_collected_df.columns = ["Resource UUID", "Collected"]
             resource_collected_df = resource_collected_df.sort_values(by="Collected", ascending=False)
-
-            # Append URL to "Resource UUID" column
             resource_collected_df["Resource UUID"] = "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
 
-            # Display the dataframe with clickable links in the "Resource UUID" column
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Resource UUID",
