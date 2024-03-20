@@ -239,7 +239,8 @@ def main():
                     display_text="Open post"
                 )
             }
-            st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
+            st.dataframe(resource_collected_df, hide_index=True, column_config=column_config)
+            most_collected_resource_uuid = resource_collected_df.iloc[0]["Resource UUID"]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
 
             st.subheader("Most Collected Post:")
