@@ -178,19 +178,20 @@ def load_data(session, followers):
 
         notifications.extend(data.get("notifications", []))
 
-        for notification in data.get("notifications", []):
-            if notification["action"] == "liked" and notification.get("resource_media"):
-                process_liked_notification(notification, user_likes)
-                name = notification["user_profile"]["name"]
-                follower_like_counts[name] += 1
+        liked_notifications = [n for n in data.get("notifications", []) if n["action"] == "liked" and n.get("resource_media")]
+        commented_notifications = [n for n in data.get("notifications", []) if n["action"] == "commented"]
+        collected_notifications = [n for n in data.get("notifications", []) if n["action"] == "collected"]
 
-            if notification["action"] == "commented":
-                process_commented_notification(
-                    notification, user_comments, resource_comments
-                )
+        for notification in liked_notifications:
+            process_liked_notification(notification, user_likes)
+            name = notification["user_profile"]["name"]
+            follower_like_counts[name] += 1
 
-            if notification["action"] == "collected":
-                process_collected_notification(notification, resource_collected)
+        for notification in commented_notifications:
+            process_commented_notification(notification, user_comments, resource_comments)
+
+        for notification in collected_notifications:
+            process_collected_notification(notification, resource_collected)
 
         if len(data.get("notifications", [])) < LIMIT:
             break
@@ -206,6 +207,7 @@ def load_data(session, followers):
         user_is_follower,
         notifications,
     )
+
 
 
 def main():
