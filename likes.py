@@ -160,7 +160,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 def load_data(_session, followers):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = []
-        for offset in range(0, 45000, LIMIT):  # Adjust the upper bound as needed
+        for offset in range(0, 40000, LIMIT):  # Adjust the upper bound as needed
             future = executor.submit(fetch_notifications, _session, offset)
             futures.append(future)
 
@@ -218,6 +218,9 @@ def fetch_notifications(_session, offset):
     resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
     data = resp.json()
     return data.get("notifications", [])
+
+
+
 
 def main():
     access_token = st.text_input("Enter your access token")
