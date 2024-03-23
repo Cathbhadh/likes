@@ -350,7 +350,7 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
-        comments_df = generate_comments_dataframe(user_comments, user_is_follower)
+        comments_df = generate_comments_dataframe(user_comments, resource_comments, user_is_follower)
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
         st.subheader("Comments by User:")
