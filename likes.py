@@ -209,7 +209,6 @@ def load_data(session, followers):
     )
 
 
-
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
@@ -363,8 +362,25 @@ def main():
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
 
         st.subheader("Comments by User:")
-        st.dataframe(comments_df, hide_index=True, column_config=column_config)
 
+        # Create a search box
+        query = st.text_input("Search comments by user")
+
+        # If a query is entered
+        if query:
+            # Apply the search filter
+            mask = comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
+            filtered_comments_df = comments_df[mask]
+        else:
+            filtered_comments_df = comments_df
+
+        # Display the filtered dataframe
+        column_config = {
+            "resource_uuid": st.column_config.LinkColumn(
+                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+            )
+        }
+        st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
