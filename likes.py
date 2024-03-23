@@ -366,13 +366,15 @@ def main():
         # Create a search box
         query = st.text_input("Search comments by user")
         if "filtered_comments_df" not in st.session_state:
-            st.session_state.filtered_comments_df = comments_df
+            st.session_state.filtered_comments_df = comments_df.copy()
 
         # If a query is entered
         if query:
             # Apply the search filter
-            mask = st.session_state.filtered_comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
+            mask = st.session_state.filtered_comments_df.apply(lambda row: query.lower() in str(row).lower().sum(), axis=1).astype(bool)
             st.session_state.filtered_comments_df = st.session_state.filtered_comments_df[mask]
+        else:
+            st.session_state.filtered_comments_df = comments_df.copy()
 
         # Display the filtered dataframe
         column_config = {
@@ -380,7 +382,7 @@ def main():
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
         }
-        st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
+        st.dataframe(st.session_state.filtered_comments_df, hide_index=True, column_config=column_config)        
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
