@@ -213,7 +213,6 @@ def main():
     if access_token and user_id:
         session = authenticate_with_token(access_token)
         followers = get_followers(session, user_id)
-
         start_time = time.perf_counter()
         (
             user_likes,
@@ -227,13 +226,10 @@ def main():
 
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
-
         st.subheader("Total Likes and Comments")
         st.write(f"Total Likes: {total_likes}")
         st.write(f"Total Comments: {total_comments}")
-
         col1, col2 = st.columns(2)
-
         with col1:
             st.subheader("Likes by user:")
             likes_df = pd.DataFrame(
@@ -323,7 +319,6 @@ def main():
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
         st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
-
         st.subheader("Percentile:")
         percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
         percentiles_values_likes = np.percentile(likes_df["Likes"], percentiles)
@@ -364,6 +359,9 @@ def main():
         else:
             filtered_comments_df = comments_df
         column_config = {
+            "actor_uuid": st.column_config.TextColumn(
+                "Name",
+            )
             "resource_uuid": st.column_config.LinkColumn(
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
