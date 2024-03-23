@@ -70,15 +70,15 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     return comments_df
 
-
-def get_followers(session, user_id):
+@st.cache_data(ttl=7200)
+def get_followers(_session, user_id):
     followers = []
     offset = 0
     limit = 500
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
-        resp = session.get(followers_url, params=params)
+        resp = _session.get(followers_url, params=params)
         follower_data = resp.json()
         followers.extend([user["profile"]["name"] for user in follower_data["users"]])
         if len(follower_data["users"]) < limit:
@@ -365,16 +365,14 @@ def main():
 
         # Create a search box
         query = st.text_input("Search comments by user")
-        if "filtered_comments_df" not in st.session_state:
-            st.session_state.filtered_comments_df = comments_df.copy()
 
         # If a query is entered
         if query:
             # Apply the search filter
-            mask = st.session_state.filtered_comments_df.apply(lambda row: any(query.lower() in str(value).lower() for value in row), axis=1)
-            st.session_state.filtered_comments_df = st.session_state.filtered_comments_df[mask]
+            mask = comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
+            filtered_comments_df = comments_df[mask]
         else:
-            st.session_state.filtered_comments_df = comments_df.copy()
+            filtered_comments_df = comments_df
 
         # Display the filtered dataframe
         column_config = {
@@ -382,7 +380,7 @@ def main():
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
         }
-        st.dataframe(st.session_state.filtered_comments_df, hide_index=True, column_config=column_config)     
+        st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
