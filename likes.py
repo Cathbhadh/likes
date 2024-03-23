@@ -71,14 +71,14 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     return comments_df
 
 @st.cache_data(ttl=7200)
-def get_followers(session, user_id):
+def get_followers(_session, user_id):
     followers = []
     offset = 0
     limit = 500
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
-        resp = session.get(followers_url, params=params)
+        resp = _session.get(followers_url, params=params)
         follower_data = resp.json()
         followers.extend([user["profile"]["name"] for user in follower_data["users"]])
         if len(follower_data["users"]) < limit:
