@@ -61,20 +61,26 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
-def generate_comments_dataframe(user_comments, resource_comments, user_is_follower):
+def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comment_data = []
 
-    for user, comment_count in user_comments.items():
-        for resource_uuid, _ in resource_comments.items():
-            for _ in range(comment_count):
-                comment_data.append({
-                    "actor_uuid": user,
-                    "resource_uuid": f"https://yodayo.com/posts/{resource_uuid}",
-                    "is_follower": user_is_follower[user]
-                })
+    for notification in notifications:
+        if notification["action"] == "commented":
+            user = notification["user_profile"]["name"]
+            resource_uuid = notification["resource_uuid"]
+            created_at = notification["created_at"]
+            comment_data.append({
+                "actor_uuid": user,
+                "resource_uuid": resource_uuid,
+                "created_at": created_at,
+                "is_follower": user_is_follower[user]
+            })
 
     comments_df = pd.DataFrame(comment_data)
+    comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
+    comments_df = comments_df.sort_values(by="created_at", ascending=False)
     return comments_df
+
 
 
 
@@ -350,7 +356,7 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
-        comments_df = generate_comments_dataframe(user_comments, resource_comments, user_is_follower)
+        comments_df = generate_comments_dataframe(user_comments, user_is_follower, data.get("notifications", []))
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
         st.subheader("Comments by User:")
