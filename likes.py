@@ -16,7 +16,7 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-
+@st.cache_data(ttl=7200)
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -24,7 +24,7 @@ def process_liked_notification(notification, user_likes):
 
     user_likes[name][(resource_uuid, created_at)] += 1
 
-
+@st.cache_data(ttl=7200)
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -32,12 +32,12 @@ def process_commented_notification(notification, user_comments, resource_comment
     user_comments[name] += 1
     resource_comments[resource_uuid] += 1
 
-
+@st.cache_data(ttl=7200)
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
-
+@st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [(user, resource_uuid, created_at, count)
                   for user, liked_posts in user_likes.items()
@@ -51,7 +51,7 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-
+@st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
@@ -70,7 +70,7 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     return comments_df
 
-
+@st.cache_data(ttl=7200)
 def get_followers(session, user_id):
     followers = []
     offset = 0
@@ -86,7 +86,7 @@ def get_followers(session, user_id):
         offset += limit
     return followers
 
-
+@st.cache_data(ttl=7200)
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
@@ -158,7 +158,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         ) * 100
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
-
+@st.cache_data(ttl=7200)
 def load_data(session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
