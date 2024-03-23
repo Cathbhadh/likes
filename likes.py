@@ -1,6 +1,7 @@
 from collections import defaultdict, Counter
 import streamlit as st
 import requests
+import concurrent.futures
 import pandas as pd
 import numpy as np
 import time
@@ -157,43 +158,51 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
 @st.cache_data(ttl=7200)
 def load_data(_session, followers):
-    offset = 0
-    user_likes = defaultdict(Counter)
-    user_comments = Counter()
-    resource_comments = Counter()
-    resource_collected = Counter()
-    follower_like_counts = Counter()
-    user_is_follower = defaultdict(bool)
-    notifications = []
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+        for offset in range(0, 40000, LIMIT):  # Adjust the upper bound as needed
+            future = executor.submit(fetch_notifications, _session, offset)
+            futures.append(future)
 
-    for follower in followers:
-        user_is_follower[follower] = True
+        user_likes = defaultdict(Counter)
+        user_comments = Counter()
+        resource_comments = Counter()
+        resource_collected = Counter()
+        follower_like_counts = Counter()
+        user_is_follower = defaultdict(bool)
+        notifications = []
 
-    while True:
-        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
-        data = resp.json()
+        for follower in followers:
+            user_is_follower[follower] = True
 
-        notifications.extend(data.get("notifications", []))
+        for future in concurrent.futures.as_completed(futures):
+            new_notifications = future.result()
+            notifications.extend(new_notifications)
 
-        liked_notifications = [n for n in data.get("notifications", []) if n["action"] == "liked" and n.get("resource_media")]
-        commented_notifications = [n for n in data.get("notifications", []) if n["action"] == "commented"]
-        collected_notifications = [n for n in data.get("notifications", []) if n["action"] == "collected"]
+            liked_notifications = [
+                n
+                for n in new_notifications
+                if n["action"] == "liked" and n.get("resource_media")
+            ]
+            commented_notifications = [
+                n for n in new_notifications if n["action"] == "commented"
+            ]
+            collected_notifications = [
+                n for n in new_notifications if n["action"] == "collected"
+            ]
 
-        for notification in liked_notifications:
-            process_liked_notification(notification, user_likes)
-            name = notification["user_profile"]["name"]
-            follower_like_counts[name] += 1
+            for notification in liked_notifications:
+                process_liked_notification(notification, user_likes)
+                name = notification["user_profile"]["name"]
+                follower_like_counts[name] += 1
 
-        for notification in commented_notifications:
-            process_commented_notification(notification, user_comments, resource_comments)
+            for notification in commented_notifications:
+                process_commented_notification(
+                    notification, user_comments, resource_comments
+                )
 
-        for notification in collected_notifications:
-            process_collected_notification(notification, resource_collected)
-
-        if len(data.get("notifications", [])) < LIMIT:
-            break
-
-        offset += LIMIT
+            for notification in collected_notifications:
+                process_collected_notification(notification, resource_collected)
 
     return (
         user_likes,
@@ -205,6 +214,10 @@ def load_data(_session, followers):
         notifications,
     )
 
+def fetch_notifications(_session, offset):
+    resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+    data = resp.json()
+    return data.get("notifications", [])
 
 def main():
     access_token = st.text_input("Enter your access token")
