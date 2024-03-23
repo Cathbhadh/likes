@@ -361,7 +361,7 @@ def main():
         column_config = {
             "actor_uuid": st.column_config.TextColumn(
                 "Name",
-            )
+            ),
             "resource_uuid": st.column_config.LinkColumn(
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
