@@ -16,12 +16,14 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
+
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
 
     user_likes[name][(resource_uuid, created_at)] += 1
+
 
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
@@ -30,11 +32,12 @@ def process_commented_notification(notification, user_comments, resource_comment
     user_comments[name] += 1
     resource_comments[resource_uuid] += 1
 
+
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
-@st.cache_data(ttl=7200)
+
 def generate_likes_dataframe(user_likes):
     liked_data = [(user, resource_uuid, created_at, count)
                   for user, liked_posts in user_likes.items()
@@ -48,7 +51,7 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-@st.cache_data(ttl=7200)
+
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
@@ -67,6 +70,7 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     return comments_df
 
+
 def get_followers(session, user_id):
     followers = []
     offset = 0
@@ -82,7 +86,7 @@ def get_followers(session, user_id):
         offset += limit
     return followers
 
-@st.cache_data(ttl=7200)
+
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
@@ -153,6 +157,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
             / (len(users_with_likes) - total_followers)
         ) * 100
         st.dataframe(non_follower_likes_summary, hide_index=True)
+
 
 def load_data(session, followers):
     offset = 0
@@ -360,14 +365,14 @@ def main():
 
         # Create a search box
         query = st.text_input("Search comments by user")
+        if "filtered_comments_df" not in st.session_state:
+            st.session_state.filtered_comments_df = comments_df
 
         # If a query is entered
         if query:
             # Apply the search filter
-            mask = comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
-            filtered_comments_df = comments_df[mask]
-        else:
-            filtered_comments_df = comments_df
+            mask = st.session_state.filtered_comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
+            st.session_state.filtered_comments_df = st.session_state.filtered_comments_df[mask]
 
         # Display the filtered dataframe
         column_config = {
