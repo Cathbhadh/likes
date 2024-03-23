@@ -16,7 +16,7 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-
+@st.cache_data(ttl=7200)
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -24,7 +24,7 @@ def process_liked_notification(notification, user_likes):
 
     user_likes[name][(resource_uuid, created_at)] += 1
 
-
+@st.cache_data(ttl=7200)
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -32,7 +32,7 @@ def process_commented_notification(notification, user_comments, resource_comment
     user_comments[name] += 1
     resource_comments[resource_uuid] += 1
 
-
+@st.cache_data(ttl=7200)
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
@@ -158,7 +158,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         ) * 100
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
-@st.cache_data
+@st.cache_data(ttl=7200)
 def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
@@ -357,24 +357,15 @@ def main():
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
         }
-
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
-
         st.subheader("Comments by User:")
-
-        # Create a search box
         query = st.text_input("Search comments by user")
-
-        # If a query is entered
         if query:
-            # Apply the search filter
             mask = comments_df.applymap(lambda x: query.lower() in str(x).lower()).any(axis=1)
             filtered_comments_df = comments_df[mask]
         else:
             filtered_comments_df = comments_df
-
-        # Display the filtered dataframe
         column_config = {
             "resource_uuid": st.column_config.LinkColumn(
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
