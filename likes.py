@@ -159,7 +159,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
 @st.cache_data(ttl=7200)
-def load_data(session, followers):
+def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
@@ -173,7 +173,7 @@ def load_data(session, followers):
         user_is_follower[follower] = True
 
     while True:
-        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
 
         notifications.extend(data.get("notifications", []))
