@@ -61,18 +61,21 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
-def generate_comments_dataframe(user_comments, user_is_follower):
+def generate_comments_dataframe(user_comments, resource_comments, user_is_follower):
     comment_data = []
 
     for user, comment_count in user_comments.items():
-        for _ in range(comment_count):
-            comment_data.append({
-                "actor_uuid": user,
-                "is_follower": user_is_follower[user]
-            })
+        for resource_uuid, _ in resource_comments.items():
+            for _ in range(comment_count):
+                comment_data.append({
+                    "actor_uuid": user,
+                    "resource_uuid": f"https://yodayo.com/posts/{resource_uuid}",
+                    "is_follower": user_is_follower[user]
+                })
 
     comments_df = pd.DataFrame(comment_data)
     return comments_df
+
 
 
 def get_followers(session, user_id):
