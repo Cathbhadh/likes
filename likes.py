@@ -345,6 +345,9 @@ def main():
             user_comments, user_is_follower, notifications
         )
         column_config = {
+            "actor_uuid": st.column_config.TextColumn(
+                "Name",
+            ),
             "resource_uuid": st.column_config.LinkColumn(
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             )
@@ -378,3 +381,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
