@@ -69,19 +69,19 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
             user = notification["user_profile"]["name"]
             resource_uuid = notification["resource_uuid"]
             created_at = notification["created_at"]
-            comment_data.append({
-                "actor_uuid": user,
-                "resource_uuid": resource_uuid,
-                "created_at": created_at,
-                "is_follower": user_is_follower[user]
-            })
+            comment_data.append(
+                {
+                    "actor_uuid": user,
+                    "resource_uuid": resource_uuid,
+                    "created_at": created_at,
+                    "is_follower": user_is_follower[user],
+                }
+            )
 
     comments_df = pd.DataFrame(comment_data)
     comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
     comments_df = comments_df.sort_values(by="created_at", ascending=False)
     return comments_df
-
-
 
 
 def get_followers(session, user_id):
@@ -219,6 +219,7 @@ def load_data(session, followers):
         user_is_follower,
         notifications,
     )
+
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -360,7 +361,9 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
-        comments_df = generate_comments_dataframe(user_comments, user_is_follower, notifications")
+        comments_df = generate_comments_dataframe(
+            user_comments, user_is_follower, notifications
+        )
 
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
