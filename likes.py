@@ -180,6 +180,7 @@ def load_data(session, followers):
     resource_collected = Counter()
     follower_like_counts = Counter()
     user_is_follower = defaultdict(bool)
+    notifications = []
 
     for follower in followers:
         user_is_follower[follower] = True
@@ -187,6 +188,8 @@ def load_data(session, followers):
     while True:
         resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
+
+        notifications.extend(data.get("notifications", []))
 
         for notification in data.get("notifications", []):
             if notification["action"] == "liked" and notification.get("resource_media"):
@@ -214,8 +217,8 @@ def load_data(session, followers):
         resource_collected,
         follower_like_counts,
         user_is_follower,
+        notifications,
     )
-
 
 def main():
     access_token = st.text_input("Enter your access token")
@@ -233,6 +236,7 @@ def main():
             resource_collected,
             follower_like_counts,
             user_is_follower,
+            notifications,
         ) = load_data(session, followers)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
@@ -356,7 +360,8 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
-        comments_df = generate_comments_dataframe(user_comments, user_is_follower, notifications)
+        comments_df = generate_comments_dataframe(user_comments, user_is_follower, notifications")
+
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
         st.subheader("Comments by User:")
