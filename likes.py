@@ -22,7 +22,7 @@ def process_liked_notification(notification, user_likes):
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
 
-    user_likes[name][(resource_uuid, created_at)] += 1
+    user_likes[name].append((resource_uuid, created_at))
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -41,18 +41,11 @@ def process_collected_notification(notification, resource_collected):
 def generate_likes_dataframe(user_likes):
     liked_data = []
 
-    for user, liked_posts in user_likes.items():
-        for (resource_uuid, created_at), count in liked_posts.items():
-            liked_data.extend(
-                [
-                    {
-                        "actor_uuid": user,
-                        "resource_uuid": resource_uuid,
-                        "created_at": created_at,
-                    }
-                ]
-                * count
-            )
+    likes_df = pd.DataFrame([
+        {"actor_uuid": user, "resource_uuid": resource_uuid, "created_at": created_at}
+        for user, posts in user_likes.items()
+        for resource_uuid, created_at in posts
+    ], columns=["actor_uuid", "resource_uuid", "created_at"])
 
     likes_df = pd.DataFrame(liked_data)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
@@ -64,23 +57,17 @@ def generate_likes_dataframe(user_likes):
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comment_data = []
 
-    for notification in notifications:
-        if notification["action"] == "commented":
-            user = notification["user_profile"]["name"]
-            resource_uuid = notification["resource_uuid"]
-            created_at = notification["created_at"]
-            comment_data.append(
-                {
-                    "actor_uuid": user,
-                    "resource_uuid": resource_uuid,
-                    "created_at": created_at,
-                    "is_follower": user_is_follower[user],
-                }
-            )
-
-    comments_df = pd.DataFrame(comment_data)
+    comments_df = pd.DataFrame([
+        {"actor_uuid": notification["user_profile"]["name"],
+         "resource_uuid": notification["resource_uuid"],
+         "created_at": notification["created_at"],
+         "is_follower": user_is_follower[notification["user_profile"]["name"]]}
+        for notification in notifications
+        if notification["action"] == "commented"
+    ], columns=["actor_uuid", "resource_uuid", "created_at", "is_follower"])
     comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
     comments_df = comments_df.sort_values(by="created_at", ascending=False)
+
     return comments_df
 
 
@@ -104,8 +91,9 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
     users_with_likes = set(likes_df["actor_uuid"].unique())
-    followers_no_likes = list(follower_names - users_with_likes)
-    users_with_no_likes_count = len(followers_no_likes)
+    follower_names = set(followers)
+    users_with_no_likes = follower_names - users_with_likes
+    users_with_no_likes_count = len(users_with_no_likes)
     total_followers = len(follower_names)
     st.write(f"Followers who didn't leave any likes: {followers_no_likes}")
     st.write(
@@ -174,7 +162,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
 def load_data(session, followers):
     offset = 0
-    user_likes = defaultdict(Counter)
+    user_likes = defaultdict(list)
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
