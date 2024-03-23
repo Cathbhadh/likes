@@ -16,7 +16,6 @@ def authenticate_with_token(access_token):
     session.cookies = jar
     return session
 
-@st.cache_data(ttl=7200)
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -24,7 +23,6 @@ def process_liked_notification(notification, user_likes):
 
     user_likes[name][(resource_uuid, created_at)] += 1
 
-@st.cache_data(ttl=7200)
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -32,7 +30,6 @@ def process_commented_notification(notification, user_comments, resource_comment
     user_comments[name] += 1
     resource_comments[resource_uuid] += 1
 
-@st.cache_data(ttl=7200)
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
@@ -70,15 +67,14 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     return comments_df
 
-@st.cache_data(ttl=7200)
-def get_followers(_session, user_id):
+def get_followers(session, user_id):
     followers = []
     offset = 0
     limit = 500
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
-        resp = _session.get(followers_url, params=params)
+        resp = session.get(followers_url, params=params)
         follower_data = resp.json()
         followers.extend([user["profile"]["name"] for user in follower_data["users"]])
         if len(follower_data["users"]) < limit:
@@ -158,8 +154,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         ) * 100
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
-@st.cache_data(ttl=7200)
-def load_data(_session, followers):
+def load_data(session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
@@ -173,7 +168,7 @@ def load_data(_session, followers):
         user_is_follower[follower] = True
 
     while True:
-        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        resp = session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
 
         notifications.extend(data.get("notifications", []))
