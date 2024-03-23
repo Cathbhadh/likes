@@ -159,10 +159,21 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 @st.cache_data(ttl=7200)
 def load_data(_session, followers):
     with concurrent.futures.ThreadPoolExecutor() as executor:
+        offset = 0
         futures = []
-        for offset in range(0, 40000, LIMIT):  # Adjust the upper bound as needed
+        more_notifications = True
+
+        while more_notifications:
             future = executor.submit(fetch_notifications, _session, offset)
             futures.append(future)
+            offset += LIMIT
+
+            try:
+                new_notifications = future.result()
+                more_notifications = len(new_notifications) == LIMIT
+            except Exception as e:
+                print(f"Error fetching notifications: {e}")
+                more_notifications = False
 
         user_likes = defaultdict(Counter)
         user_comments = Counter()
@@ -178,7 +189,7 @@ def load_data(_session, followers):
         for future in concurrent.futures.as_completed(futures):
             new_notifications = future.result()
             notifications.extend(new_notifications)
-
+            
             liked_notifications = [
                 n
                 for n in new_notifications
