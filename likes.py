@@ -61,6 +61,20 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
+def generate_comments_dataframe(user_comments, user_is_follower):
+    comment_data = []
+
+    for user, comment_count in user_comments.items():
+        for _ in range(comment_count):
+            comment_data.append({
+                "actor_uuid": user,
+                "is_follower": user_is_follower[user]
+            })
+
+    comments_df = pd.DataFrame(comment_data)
+    return comments_df
+
+
 def get_followers(session, user_id):
     followers = []
     offset = 0
@@ -197,7 +211,6 @@ def load_data(session, followers):
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
-    search_user_id = st.text_input("Enter user ID to search for comments")
 
     if access_token and user_id:
         session = authenticate_with_token(access_token)
@@ -219,38 +232,8 @@ def main():
         st.subheader("Total Likes and Comments")
         st.write(f"Total Likes: {total_likes}")
         st.write(f"Total Comments: {total_comments}")
-        
+
         col1, col2 = st.columns(2)
-        if search_user_id:
-            filtered_resource_comments = {
-                resource_uuid: comment_count
-                for resource_uuid, comment_count in resource_comments.items()
-                if any(
-                    user == search_user_id for user, _ in comment_count.items()
-                )
-            }
-
-            search_user_comments_df = pd.DataFrame.from_dict(
-                filtered_resource_comments, orient="index"
-            ).reset_index()
-            search_user_comments_df.columns = ["Resource UUID", "Comments"]
-            search_user_comments_df = search_user_comments_df.sort_values(
-                by="Comments", ascending=False
-            )
-            search_user_comments_df["Resource UUID"] = (
-                "https://yodayo.com/posts/" + search_user_comments_df["Resource UUID"]
-            )
-
-            column_config = {
-                "Resource UUID": st.column_config.LinkColumn(
-                    "Link", display_text="https://yodayo\.com/posts/(.*?)/"
-                )
-            }
-
-            st.subheader(f"Posts where user '{search_user_id}' left comments:")
-            st.dataframe(
-                search_user_comments_df, hide_index=True, column_config=column_config
-            )        
 
         with col1:
             st.subheader("Likes by user:")
@@ -364,8 +347,11 @@ def main():
                 st.write(f"{percentile}th percentile: {rounded_value}")
 
         likes_df = generate_likes_dataframe(user_likes)
+        comments_df = generate_comments_dataframe(user_comments, user_is_follower)
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True)
+        st.subheader("Comments by User:")
+        st.dataframe(comments_df, hide_index=True)
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
