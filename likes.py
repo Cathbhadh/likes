@@ -47,9 +47,9 @@ def generate_likes_dataframe(user_likes):
     likes_df = likes_df.explode("count").reset_index(drop=True)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
+    likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
-
 
 
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
@@ -67,8 +67,8 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_df = pd.DataFrame(comments_data)
     comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
     comments_df = comments_df.sort_values(by="created_at", ascending=False)
+    comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     return comments_df
-
 
 
 def get_followers(session, user_id):
@@ -353,11 +353,18 @@ def main():
         comments_df = generate_comments_dataframe(
             user_comments, user_is_follower, notifications
         )
+        column_config = {
+            "resource_uuid": st.column_config.LinkColumn(
+                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+            )
+        }
 
         st.subheader("Likes by User:", help="Shows all notifications in order")
-        st.dataframe(likes_df, hide_index=True)
+        st.dataframe(likes_df, hide_index=True, column_config=column_config)
+
         st.subheader("Comments by User:")
-        st.dataframe(comments_df, hide_index=True)
+        st.dataframe(comments_df, hide_index=True, column_config=column_config)
+
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
