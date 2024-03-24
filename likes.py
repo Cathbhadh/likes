@@ -44,7 +44,10 @@ def generate_likes_dataframe(user_likes):
     for user, liked_posts in user_likes.items():
         for post in liked_posts:
             resource_uuid, created_at_str = post[:2]  # Unpack the first two elements
-            created_at = parser.parse(created_at_str)  # Parse the datetime string
+            try:
+                created_at = parser.parse(created_at_str)  # Parse the datetime string
+            except (ValueError, OverflowError, TypeError, parser.ParserError):
+                created_at = datetime.datetime.now()  # Use the current datetime if parsing fails
             liked_data.append((user, resource_uuid, created_at))
 
     likes_df = pd.DataFrame(liked_data, columns=["actor_uuid", "resource_uuid", "created_at"])
