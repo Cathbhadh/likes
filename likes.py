@@ -1,12 +1,11 @@
 import asyncio
-import io
-import pstats
 import aiohttp
 from collections import defaultdict, Counter
 import streamlit as st
 import pandas as pd
 import numpy as np
 import time
+
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
