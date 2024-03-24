@@ -255,15 +255,11 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Likes by user:")
-            likes_df = pd.DataFrame(
-                {
-                    "User": list(user_likes.keys()),
-                    "Likes": [sum(counter.values()) for counter in user_likes.values()],
-                    "is_follower": [
-                        user_is_follower[user] for user in user_likes.keys()
-                    ],
-                }
-            )
+            likes_df = pd.DataFrame({
+                "User": list(user_likes.keys()),
+                "Likes": [len(likes_list) for likes_list in user_likes.values()],
+                "is_follower": [user_is_follower[user] for user in user_likes.keys()],
+            })
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
             st.dataframe(likes_df, hide_index=True)
 
