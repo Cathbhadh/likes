@@ -39,11 +39,10 @@ def process_collected_notification(notification, resource_collected):
 
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
-    liked_data = [
-        (user, resource_uuid, created_at, count)
-        for user, liked_posts in user_likes.items()
-        for (resource_uuid, created_at), count in liked_posts.items()
-    ]
+    liked_data = []
+    for user, liked_posts in user_likes.items():
+        for resource_uuid, created_at in liked_posts:
+            liked_data.append((user, resource_uuid, created_at, 1))
 
     likes_df = pd.DataFrame(
         liked_data, columns=["actor_uuid", "resource_uuid", "created_at", "count"]
@@ -54,6 +53,7 @@ def generate_likes_dataframe(user_likes):
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
+
 
 
 @st.cache_data(ttl=7200)
