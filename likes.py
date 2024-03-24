@@ -10,10 +10,9 @@ API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
 def authenticate_with_token(access_token):
-    session = aiohttp.ClientSession()
     jar = aiohttp.CookieJar()
     jar.update_cookies({"access_token": access_token})
-    session.cookie_jar = jar
+    session = aiohttp.ClientSession(cookie_jar=jar)
     return session
 
 def process_liked_notification(notification, user_likes):
