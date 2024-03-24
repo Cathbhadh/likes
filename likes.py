@@ -39,11 +39,12 @@ def process_collected_notification(notification, resource_collected):
 
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
-    liked_data = [
-        (user, resource_uuid, created_at)
-        for user, liked_posts in user_likes.items()
-        for resource_uuid, created_at in liked_posts
-    ]
+    liked_data = []
+    for user, liked_posts in user_likes.items():
+        for post in liked_posts:
+            resource_uuid, created_at = post[:2]  # Unpack the first two elements
+            liked_data.append((user, resource_uuid, created_at))
+
     likes_df = pd.DataFrame(liked_data, columns=["actor_uuid", "resource_uuid", "created_at"])
     likes_df = likes_df.assign(count=1).explode("count").reset_index(drop=True)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
