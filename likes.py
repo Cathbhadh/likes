@@ -170,14 +170,14 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
 
 @st.cache_data(ttl=7200)
-def load_data(followers):
+def load_data(_followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
-    user_is_follower = set(followers)
+    user_is_follower = set(_followers)
     notifications = []
 
     with requests.Session() as _session:
