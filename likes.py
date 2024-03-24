@@ -21,7 +21,8 @@ def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
-    user_likes[name].append((resource_uuid, created_at))
+
+    user_likes[name][(resource_uuid, created_at)] += 1
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -40,9 +41,9 @@ def process_collected_notification(notification, resource_collected):
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [
-        (user, resource_uuid, created_at, 1)
+        (user, resource_uuid, created_at, count)
         for user, liked_posts in user_likes.items()
-        for resource_uuid, created_at in liked_posts
+        for (resource_uuid, created_at), count in liked_posts.items()
     ]
 
     likes_df = pd.DataFrame(
@@ -54,18 +55,6 @@ def generate_likes_dataframe(user_likes):
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
-
-
-def display_top_users_stats(likes_df, percentile, total_likes):
-    top_users = likes_df.sort_values("Likes", ascending=False).head(
-        int(percentile * len(likes_df))
-    )
-    pct_top_users = len(top_users) / len(likes_df) * 100
-    pct_likes_top_users = top_users["Likes"].sum() / total_likes * 100
-    st.write(
-        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
-    )
-
 
 
 @st.cache_data(ttl=7200)
@@ -90,23 +79,21 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     return comments_df
 
 
-
 @st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
+    followers = []
     offset = 0
     limit = 500
-    followers = []
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
         resp = _session.get(followers_url, params=params)
         follower_data = resp.json()
-        followers.extend(user["profile"]["name"] for user in follower_data["users"])
+        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
         if len(follower_data["users"]) < limit:
             break
         offset += limit
     return followers
-
 
 
 @st.cache_data(ttl=7200)
@@ -185,9 +172,9 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 @st.cache_data(ttl=7200)
 def load_data(_session, followers):
     offset = 0
-    user_likes = defaultdict(list)
-    user_comments = defaultdict(int)
-    resource_comments = defaultdict(int)
+    user_likes = defaultdict(Counter)
+    user_comments = Counter()
+    resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
     user_is_follower = defaultdict(bool)
@@ -202,17 +189,17 @@ def load_data(_session, followers):
 
         notifications.extend(data.get("notifications", []))
 
-        liked_notifications = (
+        liked_notifications = [
             n
             for n in data.get("notifications", [])
             if n["action"] == "liked" and n.get("resource_media")
-        )
-        commented_notifications = (
+        ]
+        commented_notifications = [
             n for n in data.get("notifications", []) if n["action"] == "commented"
-        )
-        collected_notifications = (
+        ]
+        collected_notifications = [
             n for n in data.get("notifications", []) if n["action"] == "collected"
-        )
+        ]
 
         for notification in liked_notifications:
             process_liked_notification(notification, user_likes)
@@ -269,11 +256,15 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Likes by user:")
-            likes_df = pd.DataFrame({
-                "User": list(user_likes.keys()),
-                "Likes": [len(likes_list) for likes_list in user_likes.values()],
-                "is_follower": [user_is_follower[user] for user in user_likes.keys()],
-            })
+            likes_df = pd.DataFrame(
+                {
+                    "User": list(user_likes.keys()),
+                    "Likes": [sum(counter.values()) for counter in user_likes.values()],
+                    "is_follower": [
+                        user_is_follower[user] for user in user_likes.keys()
+                    ],
+                }
+            )
             likes_df = likes_df.sort_values(by="Likes", ascending=False)
             st.dataframe(likes_df, hide_index=True)
 
@@ -385,13 +376,20 @@ def main():
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             ),
         }
-        
-        st.subheader("% of Likes by Top Users")
-        display_top_users_stats(likes_df, 0.05, total_likes)
-        display_top_users_stats(likes_df, 0.10, total_likes)
-        display_top_users_stats(likes_df, 0.25, total_likes)
-        display_top_users_stats(likes_df, 0.50, total_likes)
+        likes_df = pd.DataFrame(
+            {
+                "User": list(user_likes.keys()),
+                "Likes": [sum(counter.values()) for counter in user_likes.values()],
+            }
+        )
 
+        st.subheader("Percentile:")
+        percentiles = [5, 10, 25, 50, 75, 90, 95]
+        percentiles_values = np.percentile(likes_df["Likes"], percentiles)
+
+        for percentile, value in zip(percentiles, percentiles_values):
+            rounded_value = round(value, 2)
+            st.write(f"{percentile}th percentile: {rounded_value}")
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
         st.subheader("Comments by User:")
