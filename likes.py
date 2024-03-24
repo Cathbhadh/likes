@@ -36,7 +36,6 @@ def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
-@st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [
         (user, resource_uuid, created_at, count)
@@ -54,7 +53,6 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
-@st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
@@ -96,7 +94,6 @@ async def get_followers(_session, user_id):
     return followers
 
 
-@st.cache_data(ttl=7200)
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
