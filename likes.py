@@ -387,4 +387,8 @@ async def main():
         st.warning("Enter your access token and user ID:")
 
 if __name__ == "__main__":
-    cProfile.run(asyncio.run(main()))
+    profiler = cProfile.Profile()
+    profiler.enable()
+    asyncio.run(main())
+    profiler.disable()
+    profiler.dump_stats("profile.stats")
