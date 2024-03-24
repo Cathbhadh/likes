@@ -240,10 +240,22 @@ def display_top_users_stats(likes_df, percentile, total_likes):
         f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
     )
 
+def get_column_config():
+    return {
+        "actor_uuid": st.column_config.TextColumn("Name"),
+        "resource_uuid": st.column_config.LinkColumn(
+            "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+        ),
+        "Resource UUID": st.column_config.LinkColumn(
+            "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+        ),
+    }
+
+
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
-
+    column_config = get_column_config()
     if access_token and user_id:
         session = authenticate_with_token(access_token)
         followers = get_followers(session, user_id)
@@ -305,12 +317,6 @@ def main():
             resource_comments_df["Resource UUID"] = (
                 "https://yodayo.com/posts/" + resource_comments_df["Resource UUID"]
             )
-            column_config = {
-                "Resource UUID": st.column_config.LinkColumn(
-                    "Link",
-                    display_text="https://yodayo\.com/posts/(.*?)/",
-                )
-            }
             st.dataframe(
                 resource_comments_df, hide_index=True, column_config=column_config
             )
@@ -329,11 +335,6 @@ def main():
                 "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
             )
 
-            column_config = {
-                "Resource UUID": st.column_config.LinkColumn(
-                    "Link", display_text="https://yodayo\.com/posts/(.*?)/"
-                )
-            }
             st.dataframe(
                 resource_collected_df, hide_index=True, column_config=column_config
             )
@@ -382,14 +383,6 @@ def main():
         comments_df = generate_comments_dataframe(
             user_comments, user_is_follower, notifications
         )
-        column_config = {
-            "actor_uuid": st.column_config.TextColumn(
-                "Name",
-            ),
-            "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
-            ),
-        }
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
         st.subheader("Comments by User:")
@@ -401,14 +394,6 @@ def main():
             filtered_comments_df = comments_df[mask]
         else:
             filtered_comments_df = comments_df
-        column_config = {
-            "actor_uuid": st.column_config.TextColumn(
-                "Name",
-            ),
-            "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
-            ),
-        }
         st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
         analyze_likes(user_likes, followers, follower_like_counts)
         end_time = time.perf_counter()
