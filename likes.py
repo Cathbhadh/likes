@@ -191,17 +191,18 @@ def load_data(_session, followers):
             notifications.extend(batched_notifications)
 
             for notification_batch in batched_notifications:
-                liked_notifications = [
-                    n
-                    for n in notification_batch
-                    if n["action"] == "liked" and n.get("resource_media")
-                ]
-                commented_notifications = [
-                    n for n in notification_batch if n["action"] == "commented"
-                ]
-                collected_notifications = [
-                    n for n in notification_batch if n["action"] == "collected"
-                ]
+                liked_notifications = []
+                commented_notifications = []
+                collected_notifications = []
+
+                for n in notification_batch:
+                    if isinstance(n, dict):
+                        if n["action"] == "liked" and n.get("resource_media"):
+                            liked_notifications.append(n)
+                        elif n["action"] == "commented":
+                            commented_notifications.append(n)
+                        elif n["action"] == "collected":
+                            collected_notifications.append(n)
 
                 for notification in liked_notifications:
                     process_liked_notification(notification, user_likes)
@@ -215,7 +216,6 @@ def load_data(_session, followers):
 
                 for notification in collected_notifications:
                     process_collected_notification(notification, resource_collected)
-
     return (
         user_likes,
         user_comments,
