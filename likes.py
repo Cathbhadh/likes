@@ -1,7 +1,6 @@
-import asyncio
-import aiohttp
 from collections import defaultdict, Counter
 import streamlit as st
+import requests
 import pandas as pd
 import numpy as np
 import time
@@ -9,16 +8,15 @@ import time
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
 
+
 def authenticate_with_token(access_token):
-    jar = aiohttp.CookieJar()
-    jar.update_cookies({"access_token": access_token})
-
-    # Create a connection pool with a limit of 100 connections
-    conn = aiohttp.TCPConnector(limit=100)
-
-    # Create a ClientSession with the connection pool
-    session = aiohttp.ClientSession(cookie_jar=jar, connector=conn)
+    session = requests.Session()
+    session.headers.update({"Accept-Encoding": "gzip, deflate, br"})
+    jar = requests.cookies.RequestsCookieJar()
+    jar.set("access_token", access_token)
+    session.cookies = jar
     return session
+
 
 def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
@@ -27,6 +25,7 @@ def process_liked_notification(notification, user_likes):
 
     user_likes[name][(resource_uuid, created_at)] += 1
 
+
 def process_commented_notification(notification, user_comments, resource_comments):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
@@ -34,10 +33,13 @@ def process_commented_notification(notification, user_comments, resource_comment
     user_comments[name] += 1
     resource_comments[resource_uuid] += 1
 
+
 def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
     resource_collected[resource_uuid] += 1
 
+
+@st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [
         (user, resource_uuid, created_at, count)
@@ -55,6 +57,8 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
+
+@st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
@@ -75,20 +79,17 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     )
     return comments_df
 
-async def get_followers(_session, user_id):
+
+@st.cache_data(ttl=7200)
+def get_followers(_session, user_id):
     followers = []
     offset = 0
     limit = 500
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
-        params = {
-            "offset": offset,
-            "limit": limit,
-            "width": 600,
-            "include_nsfw": str(True),  # Convert boolean to string
-        }
-        async with _session.get(followers_url, params=params) as resp:
-            follower_data = await resp.json()
+        params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
+        resp = _session.get(followers_url, params=params)
+        follower_data = resp.json()
         followers.extend([user["profile"]["name"] for user in follower_data["users"]])
         if len(follower_data["users"]) < limit:
             break
@@ -96,6 +97,7 @@ async def get_followers(_session, user_id):
     return followers
 
 
+@st.cache_data(ttl=7200)
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
@@ -167,69 +169,84 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         ) * 100
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
-async def fetch_notifications(session, offset, limit):
-    params = {"offset": offset, "limit": limit}
-    async with session.get(API_URL, params=params) as response:
-        data = await response.json()
-        return data.get("notifications", [])
 
-async def process_notifications(session, notifications, user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower):
-    liked_notifications = [
-        n
-        for n in notifications
-        if n["action"] == "liked" and n.get("resource_media")
-    ]
-    commented_notifications = [
-        n for n in notifications if n["action"] == "commented"
-    ]
-    collected_notifications = [
-        n for n in notifications if n["action"] == "collected"
-    ]
+@st.cache_data(ttl=7200)
+def load_data(_session, followers):
+    offset = 0
+    user_likes = defaultdict(Counter)
+    user_comments = Counter()
+    resource_comments = Counter()
+    resource_collected = Counter()
+    follower_like_counts = Counter()
+    user_is_follower = defaultdict(bool)
+    notifications = []
 
-    for notification in liked_notifications:
-        process_liked_notification(notification, user_likes)
-        name = notification["user_profile"]["name"]
-        follower_like_counts[name] += 1
+    for follower in followers:
+        user_is_follower[follower] = True
 
-    for notification in commented_notifications:
-        process_commented_notification(
-            notification, user_comments, resource_comments
-        )
+    while True:
+        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        data = resp.json()
+        notifications.extend(data.get("notifications", []))
 
-    for notification in collected_notifications:
-        process_collected_notification(notification, resource_collected)
+        liked_notifications = [
+            n
+            for n in data.get("notifications", [])
+            if n["action"] == "liked" and n.get("resource_media")
+        ]
+        commented_notifications = [
+            n for n in data.get("notifications", []) if n["action"] == "commented"
+        ]
+        collected_notifications = [
+            n for n in data.get("notifications", []) if n["action"] == "collected"
+        ]
 
-async def main():
+        for notification in liked_notifications:
+            process_liked_notification(notification, user_likes)
+            name = notification["user_profile"]["name"]
+            follower_like_counts[name] += 1
+
+        for notification in commented_notifications:
+            process_commented_notification(
+                notification, user_comments, resource_comments
+            )
+
+        for notification in collected_notifications:
+            process_collected_notification(notification, resource_collected)
+
+        if len(data.get("notifications", [])) < LIMIT:
+            break
+
+        offset += LIMIT
+
+    return (
+        user_likes,
+        user_comments,
+        resource_comments,
+        resource_collected,
+        follower_like_counts,
+        user_is_follower,
+        notifications,
+    )
+
+
+def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
 
     if access_token and user_id:
         session = authenticate_with_token(access_token)
-        followers = await get_followers(session, user_id)
+        followers = get_followers(session, user_id)
         start_time = time.perf_counter()
-
-        user_likes = defaultdict(Counter)
-        user_comments = Counter()
-        resource_comments = Counter()
-        resource_collected = Counter()
-        follower_like_counts = Counter()
-        user_is_follower = defaultdict(bool)
-        notifications = []  # Initialize notifications list
-
-        for follower in followers:
-            user_is_follower[follower] = True
-
-        async with session as session:
-            offset = 0
-            while True:
-                batch_notifications = await fetch_notifications(session, offset, LIMIT)
-                if not batch_notifications:
-                    break
-
-                notifications.extend(batch_notifications)  # Append batch to notifications list
-                await process_notifications(session, batch_notifications, user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower)
-
-                offset += LIMIT
+        (
+            user_likes,
+            user_comments,
+            resource_comments,
+            resource_collected,
+            follower_like_counts,
+            user_is_follower,
+            notifications,
+        ) = load_data(session, followers)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
@@ -387,7 +404,6 @@ async def main():
     else:
         st.warning("Enter your access token and user ID:")
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
-
-
+    main()
