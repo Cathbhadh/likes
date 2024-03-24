@@ -88,15 +88,21 @@ def get_followers(_session, user_id):
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
-        resp = _session.get(followers_url, params=params)
-        if resp.text.strip():  # Check if the response is not empty
-            follower_data = resp.json()
-            followers.extend([user["profile"]["name"] for user in follower_data["users"]])
-            if len(follower_data["users"]) < limit:
+        try:
+            resp = _session.get(followers_url, params=params)
+            resp.raise_for_status()  # Raise an exception for non-2xx status codes
+            if resp.text.strip():
+                follower_data = resp.json()
+                followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+                if len(follower_data["users"]) < limit:
+                    break
+                offset += limit
+            else:
+                st.warning("The server returned an empty response.")
                 break
-            offset += limit
-        else:
-            break  # Exit the loop if the response is empty
+        except requests.exceptions.RequestException as e:
+            st.error(f"An error occurred while fetching followers: {e}")
+            break
     return followers
 
 
