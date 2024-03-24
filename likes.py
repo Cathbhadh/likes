@@ -198,7 +198,7 @@ async def main():
 
     if access_token and user_id:
         session = authenticate_with_token(access_token)
-        followers = get_followers(session, user_id)
+        followers = await get_followers(session, user_id)  # Await the coroutine
         start_time = time.perf_counter()
 
         user_likes = defaultdict(Counter)
@@ -208,7 +208,7 @@ async def main():
         follower_like_counts = Counter()
         user_is_follower = defaultdict(bool)
 
-        for follower in followers:
+        for follower in followers:  # Iterate over the awaited result
             user_is_follower[follower] = True
 
         async with session as session:
