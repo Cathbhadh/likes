@@ -171,7 +171,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 @st.cache_data(ttl=7200)
 def load_data(_session, followers):
     offset = 0
-    user_likes = defaultdict(Counter)
+    user_likes = defaultdict(list)
     user_comments = defaultdict(int)
     resource_comments = defaultdict(int)
     resource_collected = Counter()
