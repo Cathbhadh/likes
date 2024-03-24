@@ -40,12 +40,15 @@ def process_collected_notification(notification, resource_collected):
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [
-        (user, resource_uuid, created_at)
+        (user, resource_uuid, created_at, 1)
         for user, liked_posts in user_likes.items()
         for resource_uuid, created_at in liked_posts
     ]
-    likes_df = pd.DataFrame(liked_data, columns=["actor_uuid", "resource_uuid", "created_at"])
-    likes_df = likes_df.assign(count=1).explode("count").reset_index(drop=True)
+
+    likes_df = pd.DataFrame(
+        liked_data, columns=["actor_uuid", "resource_uuid", "created_at", "count"]
+    )
+    likes_df = likes_df.explode("count").reset_index(drop=True)
     likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
@@ -53,21 +56,27 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
+
+
 @st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
-        notification
+        {
+            "actor_uuid": notification["user_profile"]["name"],
+            "resource_uuid": notification["resource_uuid"],
+            "created_at": notification["created_at"],
+            "is_follower": user_is_follower[notification["user_profile"]["name"]],
+        }
         for notification in notifications
         if notification["action"] == "commented"
     ]
+
     comments_df = pd.DataFrame(comments_data)
-    comments_df = comments_df[["user_profile", "resource_uuid", "created_at"]]
-    comments_df = comments_df.rename(columns={"user_profile": "actor_uuid"})
-    comments_df["actor_uuid"] = comments_df["actor_uuid"].apply(lambda x: x["name"])
-    comments_df["is_follower"] = comments_df["actor_uuid"].apply(lambda x: user_is_follower[x])
     comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
     comments_df = comments_df.sort_values(by="created_at", ascending=False)
-    comments_df["resource_uuid"] = "https://yodayo.com/posts/" + comments_df["resource_uuid"]
+    comments_df["resource_uuid"] = (
+        "https://yodayo.com/posts/" + comments_df["resource_uuid"]
+    )
     return comments_df
 
 
@@ -117,11 +126,9 @@ def analyze_likes(user_likes, followers, follower_like_counts):
     )
 
     follower_like_counts_series = pd.Series(follower_like_counts)
-    follower_like_counts_df = pd.DataFrame.from_dict(
-        {k: v for k, v in follower_like_counts.items() if k in follower_names},
-        orient="index",
-        columns=["likes"],
-    ).reset_index()
+    follower_like_counts_df = follower_like_counts_series[
+        follower_like_counts_series.index.isin(follower_names)
+    ].reset_index()
     follower_like_counts_df.columns = ["follower", "likes"]
     follower_like_counts_df = follower_like_counts_df[
         follower_like_counts_df["likes"] > 0
@@ -185,31 +192,30 @@ def load_data(_session, followers):
 
         notifications.extend(data.get("notifications", []))
 
-        liked_notifications_df = pd.DataFrame(
-            [n for n in data.get("notifications", []) if n["action"] == "liked" and n.get("resource_media")]
+        liked_notifications = (
+            n
+            for n in data.get("notifications", [])
+            if n["action"] == "liked" and n.get("resource_media")
         )
-        if not liked_notifications_df.empty:
-            liked_notifications_df["user_profile_name"] = liked_notifications_df["user_profile"].apply(lambda x: x["name"])
-            user_likes.update(
-                liked_notifications_df.groupby("user_profile_name")["resource_uuid", "created_at"].apply(list).to_dict()
+        commented_notifications = (
+            n for n in data.get("notifications", []) if n["action"] == "commented"
+        )
+        collected_notifications = (
+            n for n in data.get("notifications", []) if n["action"] == "collected"
+        )
+
+        for notification in liked_notifications:
+            process_liked_notification(notification, user_likes)
+            name = notification["user_profile"]["name"]
+            follower_like_counts[name] += 1
+
+        for notification in commented_notifications:
+            process_commented_notification(
+                notification, user_comments, resource_comments
             )
-            follower_like_counts.update(liked_notifications_df["user_profile_name"].value_counts().to_dict())
 
-        commented_notifications_df = pd.DataFrame(
-            [n for n in data.get("notifications", []) if n["action"] == "commented"]
-        )
-        if not commented_notifications_df.empty:
-            commented_notifications_df["user_profile_name"] = commented_notifications_df["user_profile"].apply(lambda x: x["name"])
-            for user, user_comments_count in commented_notifications_df["user_profile_name"].value_counts().items():
-                user_comments[user] += user_comments_count
-            for resource_uuid, resource_comments_count in commented_notifications_df["resource_uuid"].value_counts().items():
-                resource_comments[resource_uuid] += resource_comments_count
-
-        collected_notifications_df = pd.DataFrame(
-            [n for n in data.get("notifications", []) if n["action"] == "collected"]
-        )
-        if not collected_notifications_df.empty:
-            resource_collected.update(collected_notifications_df["resource_uuid"].value_counts().to_dict())
+        for notification in collected_notifications:
+            process_collected_notification(notification, resource_collected)
 
         if len(data.get("notifications", [])) < LIMIT:
             break
