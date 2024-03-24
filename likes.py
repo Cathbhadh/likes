@@ -21,8 +21,7 @@ def process_liked_notification(notification, user_likes):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
     created_at = notification["created_at"]
-
-    user_likes[name][(resource_uuid, created_at)] += 1
+    user_likes[name].append((resource_uuid, created_at))
 
 
 def process_commented_notification(notification, user_comments, resource_comments):
@@ -170,40 +169,54 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
 
 @st.cache_data(ttl=7200)
-def load_data(_followers):
+def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
-    user_comments = Counter()
-    resource_comments = Counter()
+    user_comments = defaultdict(int)
+    resource_comments = defaultdict(int)
     resource_collected = Counter()
     follower_like_counts = Counter()
-    user_is_follower = set(_followers)
+    user_is_follower = defaultdict(bool)
     notifications = []
 
-    with requests.Session() as _session:
-        while True:
-            resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
-            data = resp.json()
+    for follower in followers:
+        user_is_follower[follower] = True
 
-            all_notifications = (n for n in data.get("notifications", []))
-            notifications.extend(all_notifications)
+    while True:
+        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        data = resp.json()
 
-            for notification in data.get("notifications", []):
-                if notification["action"] == "liked" and notification.get("resource_media"):
-                    process_liked_notification(notification, user_likes)
-                    name = notification["user_profile"]["name"]
-                    follower_like_counts[name] += 1
-                elif notification["action"] == "commented":
-                    process_commented_notification(
-                        notification, user_comments, resource_comments
-                    )
-                elif notification["action"] == "collected":
-                    process_collected_notification(notification, resource_collected)
+        notifications.extend(data.get("notifications", []))
 
-            if len(data.get("notifications", [])) < LIMIT:
-                break
+        liked_notifications = [
+            n
+            for n in data.get("notifications", [])
+            if n["action"] == "liked" and n.get("resource_media")
+        ]
+        commented_notifications = [
+            n for n in data.get("notifications", []) if n["action"] == "commented"
+        ]
+        collected_notifications = [
+            n for n in data.get("notifications", []) if n["action"] == "collected"
+        ]
 
-            offset += LIMIT
+        for notification in liked_notifications:
+            process_liked_notification(notification, user_likes)
+            name = notification["user_profile"]["name"]
+            follower_like_counts[name] += 1
+
+        for notification in commented_notifications:
+            process_commented_notification(
+                notification, user_comments, resource_comments
+            )
+
+        for notification in collected_notifications:
+            process_collected_notification(notification, resource_collected)
+
+        if len(data.get("notifications", [])) < LIMIT:
+            break
+
+        offset += LIMIT
 
     return (
         user_likes,
@@ -214,7 +227,6 @@ def load_data(_followers):
         user_is_follower,
         notifications,
     )
-
 
 
 def main():
@@ -233,7 +245,7 @@ def main():
             follower_like_counts,
             user_is_follower,
             notifications,
-        ) = load_data(followers)
+        ) = load_data(session, followers)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
@@ -285,7 +297,7 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Link",
-                    display_text="(.*?)",
+                    display_text="https://yodayo\.com/posts/(.*?)/",
                 )
             }
             st.dataframe(
@@ -308,7 +320,7 @@ def main():
 
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
-                    "Link", display_text="(.*?)"
+                    "Link", display_text="https://yodayo\.com/posts/(.*?)/"
                 )
             }
             st.dataframe(
@@ -360,7 +372,7 @@ def main():
                 "Name",
             ),
             "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="(.*?)"
+                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             ),
         }
         st.subheader("Likes by User:", help="Shows all notifications in order")
@@ -379,7 +391,7 @@ def main():
                 "Name",
             ),
             "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="(.*?)"
+                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             ),
         }
         st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
