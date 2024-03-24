@@ -387,8 +387,24 @@ async def main():
         st.warning("Enter your access token and user ID:")
 
 if __name__ == "__main__":
+    profiling_output = io.StringIO()
+
+    # Enable profiling
     profiler = cProfile.Profile()
     profiler.enable()
+
+    # Run your main function
     asyncio.run(main())
+
+    # Disable profiling and generate the report
     profiler.disable()
-    profiler.dump_stats("profile.stats")
+    stats = pstats.Stats(profiler).sort_stats("tottime")
+    stats.stream = profiling_output
+    stats.print_stats()
+
+    # Get the captured profiling report
+    profiling_report = profiling_output.getvalue()
+
+    # Display the profiling report in Streamlit
+    st.subheader("Profiling Report")
+    st.code(profiling_report, language="text")
