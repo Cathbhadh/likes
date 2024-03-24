@@ -36,19 +36,131 @@ def process_collected_notification(notification, resource_collected):
 
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
-    # ... (existing code) ...
+    liked_data = [
+        (user, resource_uuid, created_at, count)
+        for user, liked_posts in user_likes.items()
+        for (resource_uuid, created_at), count in liked_posts.items()
+    ]
+
+    likes_df = pd.DataFrame(
+        liked_data, columns=["actor_uuid", "resource_uuid", "created_at", "count"]
+    )
+    likes_df = likes_df.explode("count").reset_index(drop=True)
+    likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
+    likes_df = likes_df.sort_values(by="created_at", ascending=False)
+    likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
+
+    return likes_df
 
 @st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
-    # ... (existing code) ...
+    comments_data = [
+        {
+            "actor_uuid": notification["user_profile"]["name"],
+            "resource_uuid": notification["resource_uuid"],
+            "created_at": notification["created_at"],
+            "is_follower": user_is_follower[notification["user_profile"]["name"]],
+        }
+        for notification in notifications
+        if notification["action"] == "commented"
+    ]
+
+    comments_df = pd.DataFrame(comments_data)
+    comments_df["created_at"] = pd.to_datetime(comments_df["created_at"])
+    comments_df = comments_df.sort_values(by="created_at", ascending=False)
+    comments_df["resource_uuid"] = (
+        "https://yodayo.com/posts/" + comments_df["resource_uuid"]
+    )
+    return comments_df
 
 @st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
-    # ... (existing code) ...
+    followers = []
+    offset = 0
+    limit = 500
+    while True:
+        followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
+        params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
+        resp = _session.get(followers_url, params=params)
+        follower_data = resp.json()
+        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+        if len(follower_data["users"]) < limit:
+            break
+        offset += limit
+    return followers
+
 
 @st.cache_data(ttl=7200)
 def analyze_likes(user_likes, followers, follower_like_counts):
-    # ... (existing code) ...
+    likes_df = generate_likes_dataframe(user_likes)
+    follower_names = set(followers)
+    users_with_likes = set(likes_df["actor_uuid"].unique())
+    followers_no_likes = list(follower_names - users_with_likes)
+    users_with_no_likes_count = len(followers_no_likes)
+    total_followers = len(follower_names)
+    st.write(f"Followers who didn't leave any likes: {followers_no_likes}")
+    st.write(
+        f"{users_with_no_likes_count} ({users_with_no_likes_count/total_followers*100:.2f}%) out of {total_followers} followers didn't leave any likes"
+    )
+
+    likes_by_followers = likes_df[likes_df["actor_uuid"].isin(follower_names)].shape[0]
+    likes_by_non_followers = likes_df[
+        ~likes_df["actor_uuid"].isin(follower_names)
+    ].shape[0]
+    total_likes = likes_by_followers + likes_by_non_followers
+
+    st.write(
+        f"Likes by followers: {likes_by_followers} ({likes_by_followers/total_likes*100:.2f}%)"
+    )
+    st.write(
+        f"Likes by non-followers: {likes_by_non_followers} ({likes_by_non_followers/total_likes*100:.2f}%)"
+    )
+
+    follower_like_counts_series = pd.Series(follower_like_counts)
+    follower_like_counts_df = follower_like_counts_series[
+        follower_like_counts_series.index.isin(follower_names)
+    ].reset_index()
+    follower_like_counts_df.columns = ["follower", "likes"]
+    follower_like_counts_df = follower_like_counts_df[
+        follower_like_counts_df["likes"] > 0
+    ]
+
+    non_follower_like_counts_df = (
+        likes_df[~likes_df["actor_uuid"].isin(follower_names)]["actor_uuid"]
+        .value_counts()
+        .reset_index()
+    )
+    non_follower_like_counts_df.columns = ["actor", "likes"]
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader(
+            "Distribution of Likes by Followers",
+            help="Shows what № of followers left what amount of likes and their percentage out of total amount of followers",
+        )
+        follower_likes_summary = (
+            follower_like_counts_df.groupby("likes")["follower"].count().reset_index()
+        )
+        follower_likes_summary.columns = ["likes", "count"]
+        follower_likes_summary["percentage"] = (
+            follower_likes_summary["count"] / total_followers
+        ) * 100
+        st.dataframe(follower_likes_summary, hide_index=True)
+
+    with col2:
+        st.subheader(
+            "Distribution of Likes by Non-Followers",
+            help="Shows what № of non-followers left what amount of likes and their percentage out of total amount of followers",
+        )
+        non_follower_likes_summary = (
+            non_follower_like_counts_df.groupby("likes")["actor"].count().reset_index()
+        )
+        non_follower_likes_summary.columns = ["likes", "count"]
+        non_follower_likes_summary["percentage"] = (
+            non_follower_likes_summary["count"]
+            / (len(users_with_likes) - total_followers)
+        ) * 100
+        st.dataframe(non_follower_likes_summary, hide_index=True)
 
 async def fetch_notifications(session, offset, limit):
     params = {"offset": offset, "limit": limit}
