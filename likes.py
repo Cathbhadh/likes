@@ -203,7 +203,7 @@ async def main():
 
     if access_token and user_id:
         session = authenticate_with_token(access_token)
-        followers = await get_followers(session, user_id)  # Await the coroutine
+        followers = await get_followers(session, user_id)
         start_time = time.perf_counter()
 
         user_likes = defaultdict(Counter)
@@ -212,18 +212,20 @@ async def main():
         resource_collected = Counter()
         follower_like_counts = Counter()
         user_is_follower = defaultdict(bool)
+        notifications = []  # Initialize notifications list
 
-        for follower in followers:  # Iterate over the awaited result
+        for follower in followers:
             user_is_follower[follower] = True
 
         async with session as session:
             offset = 0
             while True:
-                notifications = await fetch_notifications(session, offset, LIMIT)
-                if not notifications:
+                batch_notifications = await fetch_notifications(session, offset, LIMIT)
+                if not batch_notifications:
                     break
 
-                await process_notifications(session, notifications, user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower)
+                notifications.extend(batch_notifications)  # Append batch to notifications list
+                await process_notifications(session, batch_notifications, user_likes, user_comments, resource_comments, resource_collected, follower_like_counts, user_is_follower)
 
                 offset += LIMIT
 
