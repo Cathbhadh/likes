@@ -15,7 +15,12 @@ LIMIT = 500
 def authenticate_with_token(access_token):
     jar = aiohttp.CookieJar()
     jar.update_cookies({"access_token": access_token})
-    session = aiohttp.ClientSession(cookie_jar=jar)
+
+    # Create a connection pool with a limit of 100 connections
+    conn = aiohttp.TCPConnector(limit=100)
+
+    # Create a ClientSession with the connection pool
+    session = aiohttp.ClientSession(cookie_jar=jar, connector=conn)
     return session
 
 def process_liked_notification(notification, user_likes):
