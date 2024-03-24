@@ -1,6 +1,7 @@
 from collections import defaultdict, Counter
 import streamlit as st
 import requests
+from dateutil import parser
 import pandas as pd
 import numpy as np
 import time
@@ -42,16 +43,17 @@ def generate_likes_dataframe(user_likes):
     liked_data = []
     for user, liked_posts in user_likes.items():
         for post in liked_posts:
-            resource_uuid, created_at = post[:2]  # Unpack the first two elements
+            resource_uuid, created_at_str = post[:2]  # Unpack the first two elements
+            created_at = parser.parse(created_at_str)  # Parse the datetime string
             liked_data.append((user, resource_uuid, created_at))
 
     likes_df = pd.DataFrame(liked_data, columns=["actor_uuid", "resource_uuid", "created_at"])
     likes_df = likes_df.assign(count=1).explode("count").reset_index(drop=True)
-    likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
+
 
 
 @st.cache_data(ttl=7200)
