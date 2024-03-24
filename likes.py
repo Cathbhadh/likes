@@ -89,11 +89,14 @@ def get_followers(_session, user_id):
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
         resp = _session.get(followers_url, params=params)
-        follower_data = resp.json()
-        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
-        if len(follower_data["users"]) < limit:
-            break
-        offset += limit
+        if resp.text.strip():  # Check if the response is not empty
+            follower_data = resp.json()
+            followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+            if len(follower_data["users"]) < limit:
+                break
+            offset += limit
+        else:
+            break  # Exit the loop if the response is empty
     return followers
 
 
