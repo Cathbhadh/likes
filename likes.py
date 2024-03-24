@@ -39,10 +39,11 @@ def process_collected_notification(notification, resource_collected):
 
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
-    liked_data = []
-    for user, liked_posts in user_likes.items():
-        for resource_uuid, created_at in liked_posts:
-            liked_data.append((user, resource_uuid, created_at, 1))
+    liked_data = [
+        (user, resource_uuid, created_at, 1)
+        for user, liked_posts in user_likes.items()
+        for resource_uuid, created_at in liked_posts
+    ]
 
     likes_df = pd.DataFrame(
         liked_data, columns=["actor_uuid", "resource_uuid", "created_at", "count"]
@@ -53,6 +54,7 @@ def generate_likes_dataframe(user_likes):
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
+
 
 
 
@@ -78,21 +80,23 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     return comments_df
 
 
+
 @st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
-    followers = []
     offset = 0
     limit = 500
+    followers = []
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
         resp = _session.get(followers_url, params=params)
         follower_data = resp.json()
-        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+        followers.extend(user["profile"]["name"] for user in follower_data["users"])
         if len(follower_data["users"]) < limit:
             break
         offset += limit
     return followers
+
 
 
 @st.cache_data(ttl=7200)
@@ -188,17 +192,17 @@ def load_data(_session, followers):
 
         notifications.extend(data.get("notifications", []))
 
-        liked_notifications = [
+        liked_notifications = (
             n
             for n in data.get("notifications", [])
             if n["action"] == "liked" and n.get("resource_media")
-        ]
-        commented_notifications = [
+        )
+        commented_notifications = (
             n for n in data.get("notifications", []) if n["action"] == "commented"
-        ]
-        collected_notifications = [
+        )
+        collected_notifications = (
             n for n in data.get("notifications", []) if n["action"] == "collected"
-        ]
+        )
 
         for notification in liked_notifications:
             process_liked_notification(notification, user_likes)
