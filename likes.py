@@ -191,7 +191,7 @@ def load_data(_session, followers):
         if not liked_notifications_df.empty:
             liked_notifications_df["user_profile_name"] = liked_notifications_df["user_profile"].apply(lambda x: x["name"])
             user_likes.update(
-                liked_notifications_df.groupby("user_profile_name")["resource_uuid", "created_at"].apply(list).to_dict()
+                liked_notifications_df.groupby("user_profile_name")[["resource_uuid", "created_at"]].apply(list).to_dict()
             )
             follower_like_counts.update(liked_notifications_df["user_profile_name"].value_counts().to_dict())
 
