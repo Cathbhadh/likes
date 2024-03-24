@@ -72,7 +72,6 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     )
     return comments_df
 
-@st.cache_data(ttl=7200)
 async def get_followers(_session, user_id):
     followers = []
     offset = 0
