@@ -8,7 +8,7 @@ import time
 
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
-
+BATCH_SIZE = 5  # Number of offsets to fetch in a single API call
 
 def authenticate_with_token(access_token):
     session = requests.Session()
@@ -162,14 +162,17 @@ def load_data(_session, followers):
         futures = []
         offset = 0
         has_more_notifications = True
+        num_batches = 0
 
         while has_more_notifications:
-            future = executor.submit(fetch_notifications, _session, offset)
+            batch_offsets = [offset + i * LIMIT for i in range(BATCH_SIZE)]
+            future = executor.submit(fetch_notifications_batch, _session, batch_offsets)
             futures.append(future)
-            offset += LIMIT
+            offset += BATCH_SIZE * LIMIT
+            num_batches += 1
 
-            # Check if the last batch of notifications had fewer than the limit
-            if len(future.result()) < LIMIT:
+            # Check if the last batch of notifications had fewer than the expected number
+            if len(future.result()) < BATCH_SIZE * LIMIT:
                 has_more_notifications = False
 
         user_likes = defaultdict(Counter)
@@ -184,33 +187,34 @@ def load_data(_session, followers):
             user_is_follower[follower] = True
 
         for future in concurrent.futures.as_completed(futures):
-            new_notifications = future.result()
-            notifications.extend(new_notifications)
+            batched_notifications = future.result()
+            notifications.extend(batched_notifications)
 
-            liked_notifications = [
-                n
-                for n in new_notifications
-                if n["action"] == "liked" and n.get("resource_media")
-            ]
-            commented_notifications = [
-                n for n in new_notifications if n["action"] == "commented"
-            ]
-            collected_notifications = [
-                n for n in new_notifications if n["action"] == "collected"
-            ]
+            for notification_batch in batched_notifications:
+                liked_notifications = [
+                    n
+                    for n in notification_batch
+                    if n["action"] == "liked" and n.get("resource_media")
+                ]
+                commented_notifications = [
+                    n for n in notification_batch if n["action"] == "commented"
+                ]
+                collected_notifications = [
+                    n for n in notification_batch if n["action"] == "collected"
+                ]
 
-            for notification in liked_notifications:
-                process_liked_notification(notification, user_likes)
-                name = notification["user_profile"]["name"]
-                follower_like_counts[name] += 1
+                for notification in liked_notifications:
+                    process_liked_notification(notification, user_likes)
+                    name = notification["user_profile"]["name"]
+                    follower_like_counts[name] += 1
 
-            for notification in commented_notifications:
-                process_commented_notification(
-                    notification, user_comments, resource_comments
-                )
+                for notification in commented_notifications:
+                    process_commented_notification(
+                        notification, user_comments, resource_comments
+                    )
 
-            for notification in collected_notifications:
-                process_collected_notification(notification, resource_collected)
+                for notification in collected_notifications:
+                    process_collected_notification(notification, resource_collected)
 
     return (
         user_likes,
@@ -220,11 +224,16 @@ def load_data(_session, followers):
         follower_like_counts,
         user_is_follower,
         notifications,
-    )    
-def fetch_notifications(_session, offset):
-    resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
-    data = resp.json()
-    return data.get("notifications", [])
+    )
+    
+    
+def fetch_notifications_batch(_session, batch_offsets):
+    batched_notifications = []
+    for offset in batch_offsets:
+        resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
+        data = resp.json()
+        batched_notifications.extend(data.get("notifications", []))
+    return batched_notifications
 
 
 
