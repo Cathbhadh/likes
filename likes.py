@@ -78,7 +78,12 @@ async def get_followers(_session, user_id):
     limit = 500
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
-        params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "width": 600,
+            "include_nsfw": str(True),  # Convert boolean to string
+        }
         async with _session.get(followers_url, params=params) as resp:
             follower_data = await resp.json()
         followers.extend([user["profile"]["name"] for user in follower_data["users"]])
