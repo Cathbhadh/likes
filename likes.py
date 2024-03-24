@@ -230,6 +230,16 @@ def load_data(_session, followers):
     )
 
 
+def display_top_users_stats(likes_df, percentile, total_likes):
+    top_users = likes_df.sort_values("Likes", ascending=False).head(
+        int(percentile * len(likes_df))
+    )
+    pct_top_users = len(top_users) / len(likes_df) * 100
+    pct_likes_top_users = top_users["Likes"].sum() / total_likes * 100
+    st.write(
+        f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
+    )
+
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
@@ -349,7 +359,11 @@ def main():
         percentiles_values_comments = np.percentile(
             comments_df["Comments"], percentiles
         )
-
+        st.subheader("% of Likes by Top Users")
+        display_top_users_stats(likes_df, 0.05, total_likes)
+        display_top_users_stats(likes_df, 0.10, total_likes)
+        display_top_users_stats(likes_df, 0.25, total_likes)
+        display_top_users_stats(likes_df, 0.50, total_likes)
         col5, col6 = st.columns(2)
 
         with col5:
@@ -376,20 +390,6 @@ def main():
                 "Link", display_text="https://yodayo\.com/posts/(.*?)/"
             ),
         }
-        likes_df = pd.DataFrame(
-            {
-                "User": list(user_likes.keys()),
-                "Likes": [sum(counter.values()) for counter in user_likes.values()],
-            }
-        )
-
-        st.subheader("Percentile:")
-        percentiles = [5, 10, 25, 50, 75, 90, 95]
-        percentiles_values = np.percentile(likes_df["Likes"], percentiles)
-
-        for percentile, value in zip(percentiles, percentiles_values):
-            rounded_value = round(value, 2)
-            st.write(f"{percentile}th percentile: {rounded_value}")
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
         st.subheader("Comments by User:")
