@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
+import cProfile
 
 API_URL = "https://api.yodayo.com/v1/notifications"
 LIMIT = 500
@@ -386,4 +387,4 @@ async def main():
         st.warning("Enter your access token and user ID:")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    cProfile.run(asyncio.run(main()))
