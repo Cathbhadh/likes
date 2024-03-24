@@ -233,7 +233,7 @@ def main():
             follower_like_counts,
             user_is_follower,
             notifications,
-        ) = load_data(session, followers)
+        ) = load_data(followers)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
