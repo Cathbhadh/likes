@@ -232,7 +232,9 @@ def fetch_notifications_batch(_session, batch_offsets):
     for offset in batch_offsets:
         resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
-        batched_notifications.extend(data.get("notifications", []))
+        notifications = data.get("notifications")
+        if notifications is not None:
+            batched_notifications.extend(notifications)
     return batched_notifications
 
 
