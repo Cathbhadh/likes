@@ -298,7 +298,7 @@ def main():
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
                     "Link",
-                    display_text="https://yodayo\.com/posts/(.*?)/",
+                    display_text="(.*?)",
                 )
             }
             st.dataframe(
@@ -321,7 +321,7 @@ def main():
 
             column_config = {
                 "Resource UUID": st.column_config.LinkColumn(
-                    "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+                    "Link", display_text="(.*?)"
                 )
             }
             st.dataframe(
