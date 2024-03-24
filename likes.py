@@ -1,7 +1,6 @@
 from collections import defaultdict, Counter
 import streamlit as st
 import requests
-from dateutil import parser
 import pandas as pd
 import numpy as np
 import time
@@ -40,23 +39,18 @@ def process_collected_notification(notification, resource_collected):
 
 @st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
-    liked_data = []
-    for user, liked_posts in user_likes.items():
-        for post in liked_posts:
-            resource_uuid, created_at_str = post[:2]  # Unpack the first two elements
-            try:
-                created_at = parser.parse(created_at_str)  # Parse the datetime string
-            except (ValueError, OverflowError, TypeError, parser.ParserError):
-                created_at = datetime.datetime.now()  # Use the current datetime if parsing fails
-            liked_data.append((user, resource_uuid, created_at))
-
+    liked_data = [
+        (user, resource_uuid, created_at)
+        for user, liked_posts in user_likes.items()
+        for resource_uuid, created_at in liked_posts
+    ]
     likes_df = pd.DataFrame(liked_data, columns=["actor_uuid", "resource_uuid", "created_at"])
     likes_df = likes_df.assign(count=1).explode("count").reset_index(drop=True)
+    likes_df["created_at"] = pd.to_datetime(likes_df["created_at"])
     likes_df = likes_df.sort_values(by="created_at", ascending=False)
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
-
 
 
 @st.cache_data(ttl=7200)
@@ -197,7 +191,7 @@ def load_data(_session, followers):
         if not liked_notifications_df.empty:
             liked_notifications_df["user_profile_name"] = liked_notifications_df["user_profile"].apply(lambda x: x["name"])
             user_likes.update(
-                liked_notifications_df.groupby("user_profile_name")[["resource_uuid", "created_at"]].apply(list).to_dict()
+                liked_notifications_df.groupby("user_profile_name")["resource_uuid", "created_at"].apply(list).to_dict()
             )
             follower_like_counts.update(liked_notifications_df["user_profile_name"].value_counts().to_dict())
 
