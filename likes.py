@@ -11,7 +11,6 @@ LIMIT = 500
 
 def authenticate_with_token(access_token):
     session = requests.Session()
-    session.headers.update({"Accept-Encoding": "gzip, deflate, br"})
     jar = requests.cookies.RequestsCookieJar()
     jar.set("access_token", access_token)
     session.cookies = jar
@@ -88,21 +87,12 @@ def get_followers(_session, user_id):
     while True:
         followers_url = f"https://api.yodayo.com/v1/users/{user_id}/followers"
         params = {"offset": offset, "limit": limit, "width": 600, "include_nsfw": True}
-        try:
-            resp = _session.get(followers_url, params=params)
-            resp.raise_for_status()  # Raise an exception for non-2xx status codes
-            if resp.text.strip():
-                follower_data = resp.json()
-                followers.extend([user["profile"]["name"] for user in follower_data["users"]])
-                if len(follower_data["users"]) < limit:
-                    break
-                offset += limit
-            else:
-                st.warning("The server returned an empty response.")
-                break
-        except requests.exceptions.RequestException as e:
-            st.error(f"An error occurred while fetching followers: {e}")
+        resp = _session.get(followers_url, params=params)
+        follower_data = resp.json()
+        followers.extend([user["profile"]["name"] for user in follower_data["users"]])
+        if len(follower_data["users"]) < limit:
             break
+        offset += limit
     return followers
 
 
@@ -196,6 +186,7 @@ def load_data(_session, followers):
     while True:
         resp = _session.get(API_URL, params={"offset": offset, "limit": LIMIT})
         data = resp.json()
+
         notifications.extend(data.get("notifications", []))
 
         liked_notifications = [
@@ -382,7 +373,7 @@ def main():
                 "Name",
             ),
             "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+                "Link", display_text="(.*?)"
             ),
         }
         st.subheader("Likes by User:", help="Shows all notifications in order")
@@ -401,7 +392,7 @@ def main():
                 "Name",
             ),
             "resource_uuid": st.column_config.LinkColumn(
-                "Link", display_text="https://yodayo\.com/posts/(.*?)/"
+                "Link", display_text="(.*?)"
             ),
         }
         st.dataframe(filtered_comments_df, hide_index=True, column_config=column_config)
