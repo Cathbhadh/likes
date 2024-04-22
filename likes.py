@@ -33,12 +33,9 @@ def process_commented_notification(notification, user_comments, resource_comment
     resource_comments[resource_uuid] += 1
 
 
-def process_collected_notification(notification, user_collected):
-    name = notification["user_profile"]["name"]
+def process_collected_notification(notification, resource_collected):
     resource_uuid = notification["resource_uuid"]
-    user_collected[name] += 1
-
-
+    resource_collected[resource_uuid] += 1
 
 
 @st.cache_data(ttl=7200)
@@ -57,22 +54,6 @@ def generate_likes_dataframe(user_likes):
     likes_df["resource_uuid"] = "https://yodayo.com/posts/" + likes_df["resource_uuid"]
 
     return likes_df
-
-@st.cache_data(ttl=7200)
-def generate_collected_dataframe(user_collected):
-    collected_data = [
-        (user, resource_uuid)
-        for user, collected_count in user_collected.items()
-        for _ in range(collected_count)
-        for resource_uuid in user_collected
-    ]
-
-    collected_df = pd.DataFrame(
-        collected_data, columns=["actor_uuid", "resource_uuid"]
-    )
-    collected_df["resource_uuid"] = "https://yodayo.com/posts/" + collected_df["resource_uuid"]
-
-    return collected_df
 
 
 @st.cache_data(ttl=7200)
@@ -95,7 +76,6 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
         "https://yodayo.com/posts/" + comments_df["resource_uuid"]
     )
     return comments_df
-
 
 @st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
@@ -192,12 +172,12 @@ def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
-    user_collected = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
     user_is_follower = defaultdict(bool)
     notifications = []
+    user_collected = Counter()
 
     for follower in followers:
         user_is_follower[follower] = True
@@ -219,10 +199,6 @@ def load_data(_session, followers):
         collected_notifications = [
             n for n in data.get("notifications", []) if n["action"] == "collected"
         ]
-        
-        for notification in collected_notifications:
-            process_collected_notification(notification, user_collected)
-
 
         for notification in liked_notifications:
             process_liked_notification(notification, user_likes)
@@ -233,6 +209,11 @@ def load_data(_session, followers):
             process_commented_notification(
                 notification, user_comments, resource_comments
             )
+            
+        for notification in collected_notifications:
+            process_collected_notification(notification, resource_collected)
+            user_name = notification["user_profile"]["name"]
+            user_collected[user_name] += 1
 
         for notification in collected_notifications:
             process_collected_notification(notification, resource_collected)
@@ -263,6 +244,7 @@ def display_top_users_stats(likes_df, percentile, total_likes):
     st.write(
         f"{len(top_users)} users ({pct_top_users:.1f}% of all users) contributed {pct_likes_top_users:.1f}% of total likes"
     )
+
 
 def get_column_config():
     return {
@@ -301,7 +283,6 @@ def main():
                 collected_user_names.add(notification["user_profile"]["name"])
         
         num_users_collected = len(collected_user_names)
-        
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
         st.subheader("Total Likes and Comments")
@@ -352,7 +333,19 @@ def main():
             st.dataframe(
                 resource_comments_df, hide_index=True, column_config=column_config
             )
-        collected_df = generate_collected_dataframe(user_collected)
+            st.subheader("Collected by user:")
+            collected_df = pd.DataFrame(
+                {
+                    "User": list(user_collected.keys()),
+                    "Collected": list(user_collected.values()),
+                    "is_follower": [
+                        user_is_follower[user] for user in user_collected.keys()
+                    ],
+                }
+            )
+            collected_df = collected_df.sort_values(by="Collected", ascending=False)
+            st.dataframe(collected_df, hide_index=True)
+
         col4 = st.columns(1)[0]
         with col4:
             st.subheader("Collected by resource_uuid:")
@@ -370,12 +363,19 @@ def main():
             st.dataframe(
                 resource_collected_df, hide_index=True, column_config=column_config
             )
-            st.write(f"№ of Users who Collected: {num_users_collected}")
             most_collected_resource_uuid = resource_collected_df.iloc[0][
                 "Resource UUID"
             ]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
-            st.dataframe(collected_df, hide_index=True, column_config=column_config)
+
+            st.subheader("Most Collected Post:")
+            st.write(f"Post ID: {most_collected_resource_uuid}")
+            st.write(f"№ of Collections: {most_collected_count}")
+            st.subheader("User Interaction Statistics:")
+            st.write(f"№ of Unique Users who Liked: {len(user_likes)}")
+            st.write(f"№ of Unique Users who Commented: {len(user_comments)}")
+            st.write(f"№ of Users who Collected: {num_users_collected}")
+
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
         st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
@@ -408,7 +408,6 @@ def main():
         comments_df = generate_comments_dataframe(
             user_comments, user_is_follower, notifications
         )
-
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
         st.subheader("Comments by User:")
