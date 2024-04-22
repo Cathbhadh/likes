@@ -33,9 +33,11 @@ def process_commented_notification(notification, user_comments, resource_comment
     resource_comments[resource_uuid] += 1
 
 
-def process_collected_notification(notification, resource_collected):
+def process_collected_notification(notification, user_collected):
+    name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
-    resource_collected[resource_uuid] += 1
+    user_collected[name].add(resource_uuid)
+
 
 
 @st.cache_data(ttl=7200)
@@ -187,6 +189,7 @@ def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
+    user_collected = defaultdict(set)
     resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
@@ -213,6 +216,10 @@ def load_data(_session, followers):
         collected_notifications = [
             n for n in data.get("notifications", []) if n["action"] == "collected"
         ]
+        
+        for notification in collected_notifications:
+            process_collected_notification(notification, user_collected)
+
 
         for notification in liked_notifications:
             process_liked_notification(notification, user_likes)
@@ -281,6 +288,7 @@ def main():
             follower_like_counts,
             user_is_follower,
             notifications,
+            user_collected,
         ) = load_data(session, followers)
 
         total_likes = sum(len(posts) for posts in user_likes.values())
