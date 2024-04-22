@@ -215,8 +215,6 @@ def load_data(_session, followers):
             user_name = notification["user_profile"]["name"]
             user_collected[user_name] += 1
 
-        for notification in collected_notifications:
-            process_collected_notification(notification, resource_collected)
 
         if len(data.get("notifications", [])) < LIMIT:
             break
@@ -288,7 +286,7 @@ def main():
         st.subheader("Total Likes and Comments")
         st.write(f"Total Likes: {total_likes}")
         st.write(f"Total Comments: {total_comments}")
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             st.subheader("Likes by user:")
             likes_df = pd.DataFrame(
@@ -317,19 +315,8 @@ def main():
             comments_df = comments_df.sort_values(by="Comments", ascending=False)
             st.dataframe(comments_df, hide_index=True)
 
-        #col3 = st.columns(1)[0]
+        col3 = st.columns(1)[0]
         with col3:
-            collected_df = pd.DataFrame(
-                {
-                    "User": list(user_collected.keys()),
-                    "Collected": list(user_collected.values()),
-                    "is_follower": [
-                        user_is_follower[user] for user in user_collected.keys()
-                    ],
-                }
-            )
-            collected_df = collected_df.sort_values(by="Collected", ascending=False)
-            st.dataframe(collected_df, hide_index=True)
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
                 resource_comments, orient="index"
@@ -345,6 +332,17 @@ def main():
                 resource_comments_df, hide_index=True, column_config=column_config
             )
             st.subheader("Collected by user:")
+            collected_df = pd.DataFrame(
+                {
+                    "User": list(user_collected.keys()),
+                    "Collected": list(user_collected.values()),
+                    "is_follower": [
+                        user_is_follower[user] for user in user_collected.keys()
+                    ],
+                }
+            )
+            collected_df = collected_df.sort_values(by="Collected", ascending=False)
+            st.dataframe(collected_df, hide_index=True)
 
         col4 = st.columns(1)[0]
         with col4:
@@ -430,4 +428,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 
