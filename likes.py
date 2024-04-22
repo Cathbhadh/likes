@@ -250,6 +250,7 @@ def load_data(_session, followers):
         follower_like_counts,
         user_is_follower,
         notifications,
+        user_collected,
     )
 
 
