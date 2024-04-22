@@ -360,8 +360,6 @@ def main():
                 "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
             )
 
-            st.subheader("Collected by user:")
-            st.dataframe(collected_df, hide_index=True, column_config=column_config)
             st.dataframe(
                 resource_collected_df, hide_index=True, column_config=column_config
             )
@@ -369,15 +367,7 @@ def main():
                 "Resource UUID"
             ]
             most_collected_count = resource_collected_df.iloc[0]["Collected"]
-
-            st.subheader("Most Collected Post:")
-            st.write(f"Post ID: {most_collected_resource_uuid}")
-            st.write(f"№ of Collections: {most_collected_count}")
-            st.subheader("User Interaction Statistics:")
-            st.write(f"№ of Unique Users who Liked: {len(user_likes)}")
-            st.write(f"№ of Unique Users who Commented: {len(user_comments)}")
-            st.write(f"№ of Users who Collected: {len(resource_collected)}")
-
+            st.dataframe(collected_df, hide_index=True, column_config=column_config)
         average_likes_per_user = total_likes / len(user_likes)
         st.subheader("Average Likes per User")
         st.write(f"Average Likes per User: {average_likes_per_user:.2f}")
