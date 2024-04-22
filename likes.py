@@ -288,7 +288,7 @@ def main():
         st.subheader("Total Likes and Comments")
         st.write(f"Total Likes: {total_likes}")
         st.write(f"Total Comments: {total_comments}")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.subheader("Likes by user:")
             likes_df = pd.DataFrame(
