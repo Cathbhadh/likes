@@ -36,7 +36,8 @@ def process_commented_notification(notification, user_comments, resource_comment
 def process_collected_notification(notification, user_collected):
     name = notification["user_profile"]["name"]
     resource_uuid = notification["resource_uuid"]
-    user_collected[name].add(resource_uuid)
+    user_collected[name] += 1
+
 
 
 
@@ -61,8 +62,9 @@ def generate_likes_dataframe(user_likes):
 def generate_collected_dataframe(user_collected):
     collected_data = [
         (user, resource_uuid)
-        for user, collected_posts in user_collected.items()
-        for resource_uuid in collected_posts.keys()
+        for user, collected_count in user_collected.items()
+        for _ in range(collected_count)
+        for resource_uuid in user_collected
     ]
 
     collected_df = pd.DataFrame(
@@ -71,6 +73,7 @@ def generate_collected_dataframe(user_collected):
     collected_df["resource_uuid"] = "https://yodayo.com/posts/" + collected_df["resource_uuid"]
 
     return collected_df
+
 
 @st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
@@ -189,7 +192,7 @@ def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
     user_comments = Counter()
-    user_collected = defaultdict(set)
+    user_collected = Counter()
     resource_comments = Counter()
     resource_collected = Counter()
     follower_like_counts = Counter()
