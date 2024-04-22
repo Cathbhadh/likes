@@ -295,6 +295,13 @@ def main():
             user_collected,
         ) = load_data(session, followers)
 
+            collected_user_names = set()
+            for notification in notifications:
+                if notification["action"] == "collected":
+                    collected_user_names.add(notification["user_profile"]["name"])
+        
+            num_users_collected = len(collected_user_names)
+        
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
         st.subheader("Total Likes and Comments")
@@ -363,6 +370,7 @@ def main():
             st.dataframe(
                 resource_collected_df, hide_index=True, column_config=column_config
             )
+            st.write(f"№ of Users who Collected: {num_users_collected}")
             most_collected_resource_uuid = resource_collected_df.iloc[0][
                 "Resource UUID"
             ]
