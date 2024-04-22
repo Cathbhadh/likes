@@ -295,7 +295,7 @@ def main():
             user_collected,
         ) = load_data(session, followers)
 
-            collected_user_names = set()
+        collected_user_names = set()
             for notification in notifications:
                 if notification["action"] == "collected":
                     collected_user_names.add(notification["user_profile"]["name"])
