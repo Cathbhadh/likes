@@ -296,11 +296,11 @@ def main():
         ) = load_data(session, followers)
 
         collected_user_names = set()
-            for notification in notifications:
-                if notification["action"] == "collected":
-                    collected_user_names.add(notification["user_profile"]["name"])
+        for notification in notifications:
+            if notification["action"] == "collected":
+                collected_user_names.add(notification["user_profile"]["name"])
         
-            num_users_collected = len(collected_user_names)
+        num_users_collected = len(collected_user_names)
         
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
