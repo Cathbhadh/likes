@@ -55,7 +55,20 @@ def generate_likes_dataframe(user_likes):
 
     return likes_df
 
+@st.cache_data(ttl=7200)
+def generate_collected_dataframe(user_collected):
+    collected_data = [
+        (user, resource_uuid)
+        for user, collected_posts in user_collected.items()
+        for resource_uuid in collected_posts.keys()
+    ]
 
+    collected_df = pd.DataFrame(
+        collected_data, columns=["actor_uuid", "resource_uuid"]
+    )
+    collected_df["resource_uuid"] = "https://yodayo.com/posts/" + collected_df["resource_uuid"]
+
+    return collected_df
 
 @st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
@@ -320,7 +333,7 @@ def main():
             st.dataframe(
                 resource_comments_df, hide_index=True, column_config=column_config
             )
-
+        collected_df = generate_collected_dataframe(user_collected)
         col4 = st.columns(1)[0]
         with col4:
             st.subheader("Collected by resource_uuid:")
@@ -335,6 +348,8 @@ def main():
                 "https://yodayo.com/posts/" + resource_collected_df["Resource UUID"]
             )
 
+            st.subheader("Collected by user:")
+            st.dataframe(collected_df, hide_index=True, column_config=column_config)
             st.dataframe(
                 resource_collected_df, hide_index=True, column_config=column_config
             )
@@ -383,6 +398,7 @@ def main():
         comments_df = generate_comments_dataframe(
             user_comments, user_is_follower, notifications
         )
+
         st.subheader("Likes by User:", help="Shows all notifications in order")
         st.dataframe(likes_df, hide_index=True, column_config=column_config)
         st.subheader("Comments by User:")
