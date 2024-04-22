@@ -319,6 +319,17 @@ def main():
 
         col3 = st.columns(1)[0]
         with col3:
+            collected_df = pd.DataFrame(
+                {
+                    "User": list(user_collected.keys()),
+                    "Collected": list(user_collected.values()),
+                    "is_follower": [
+                        user_is_follower[user] for user in user_collected.keys()
+                    ],
+                }
+            )
+            collected_df = collected_df.sort_values(by="Collected", ascending=False)
+            st.dataframe(collected_df, hide_index=True)
             st.subheader("Comments by resource_uuid:")
             resource_comments_df = pd.DataFrame.from_dict(
                 resource_comments, orient="index"
@@ -334,17 +345,6 @@ def main():
                 resource_comments_df, hide_index=True, column_config=column_config
             )
             st.subheader("Collected by user:")
-            collected_df = pd.DataFrame(
-                {
-                    "User": list(user_collected.keys()),
-                    "Collected": list(user_collected.values()),
-                    "is_follower": [
-                        user_is_follower[user] for user in user_collected.keys()
-                    ],
-                }
-            )
-            collected_df = collected_df.sort_values(by="Collected", ascending=False)
-            st.dataframe(collected_df, hide_index=True)
 
         col4 = st.columns(1)[0]
         with col4:
