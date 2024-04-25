@@ -39,6 +39,7 @@ def process_collected_notification(notification, resource_collected):
 
 
 @st.cache_data(ttl=7200)
+@st.experimental_fragment
 def generate_likes_dataframe(user_likes):
     liked_data = [
         (user, resource_uuid, created_at)
@@ -57,6 +58,7 @@ def generate_likes_dataframe(user_likes):
 
 
 @st.cache_data(ttl=7200)
+@st.experimental_fragment
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
