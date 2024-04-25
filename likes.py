@@ -38,7 +38,6 @@ def process_collected_notification(notification, resource_collected):
     resource_collected[resource_uuid] += 1
 
 
-@st.cache_data(ttl=7200)
 @st.experimental_fragment
 def generate_likes_dataframe(user_likes):
     liked_data = [
@@ -57,7 +56,6 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
-@st.cache_data(ttl=7200)
 @st.experimental_fragment
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
@@ -79,7 +77,6 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     )
     return comments_df
 
-@st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
     followers = []
     offset = 0
@@ -96,7 +93,6 @@ def get_followers(_session, user_id):
     return followers
 
 
-@st.cache_data(ttl=7200)
 @st.experimental_fragment
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
@@ -170,7 +166,6 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
 
-@st.cache_data(ttl=7200)
 @st.experimental_fragment
 def load_data(_session, followers):
     offset = 0
@@ -259,7 +254,6 @@ def get_column_config():
         ),
     }
 
-@st.experimental_fragment
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
