@@ -97,6 +97,7 @@ def get_followers(_session, user_id):
 
 
 @st.cache_data(ttl=7200)
+@st.experimental_fragment
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
@@ -170,6 +171,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
 
 
 @st.cache_data(ttl=7200)
+@st.experimental_fragment
 def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
