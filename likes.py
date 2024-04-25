@@ -257,7 +257,7 @@ def get_column_config():
         ),
     }
 
-
+@st.experimental_fragment
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
