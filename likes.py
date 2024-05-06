@@ -38,7 +38,7 @@ def process_collected_notification(notification, resource_collected):
     resource_collected[resource_uuid] += 1
 
 
-@st.experimental_fragment
+@st.cache_data(ttl=7200)
 def generate_likes_dataframe(user_likes):
     liked_data = [
         (user, resource_uuid, created_at)
@@ -56,7 +56,7 @@ def generate_likes_dataframe(user_likes):
     return likes_df
 
 
-@st.experimental_fragment
+@st.cache_data(ttl=7200)
 def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     comments_data = [
         {
@@ -77,6 +77,18 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     )
     return comments_df
 
+
+def count_liked_posts(notifications):
+    liked_posts = defaultdict(int)
+    for notification in notifications:
+        if notification["action"] == "liked" and notification.get("resource_media"):
+            user_uuid = notification["user_profile"]["uuid"]
+            profile_name = notification["user_profile"]["name"]
+            liked_posts[(user_uuid, profile_name)] += 1
+    return liked_posts
+
+
+@st.cache_data(ttl=7200)
 def get_followers(_session, user_id):
     followers = []
     offset = 0
@@ -93,7 +105,7 @@ def get_followers(_session, user_id):
     return followers
 
 
-@st.experimental_fragment
+@st.cache_data(ttl=7200)
 def analyze_likes(user_likes, followers, follower_like_counts):
     likes_df = generate_likes_dataframe(user_likes)
     follower_names = set(followers)
@@ -166,7 +178,7 @@ def analyze_likes(user_likes, followers, follower_like_counts):
         st.dataframe(non_follower_likes_summary, hide_index=True)
 
 
-@st.experimental_fragment
+@st.cache_data(ttl=7200)
 def load_data(_session, followers):
     offset = 0
     user_likes = defaultdict(Counter)
@@ -208,12 +220,11 @@ def load_data(_session, followers):
             process_commented_notification(
                 notification, user_comments, resource_comments
             )
-            
+
         for notification in collected_notifications:
             process_collected_notification(notification, resource_collected)
             user_name = notification["user_profile"]["name"]
             user_collected[user_name] += 1
-
 
         if len(data.get("notifications", [])) < LIMIT:
             break
@@ -229,6 +240,7 @@ def load_data(_session, followers):
         user_is_follower,
         notifications,
         user_collected,
+        liked_posts,
     )
 
 
@@ -254,6 +266,7 @@ def get_column_config():
         ),
     }
 
+
 def main():
     access_token = st.text_input("Enter your access token")
     user_id = st.text_input("Enter user ID")
@@ -271,13 +284,16 @@ def main():
             user_is_follower,
             notifications,
             user_collected,
+            liked_posts,
         ) = load_data(session, followers)
+        
+        liked_posts = count_liked_posts(notifications)
 
         collected_user_names = set()
         for notification in notifications:
             if notification["action"] == "collected":
                 collected_user_names.add(notification["user_profile"]["name"])
-        
+
         num_users_collected = len(collected_user_names)
         total_likes = sum(len(posts) for posts in user_likes.values())
         total_comments = sum(user_comments.values())
@@ -387,6 +403,10 @@ def main():
         display_top_users_stats(likes_df, 0.25, total_likes)
         display_top_users_stats(likes_df, 0.50, total_likes)
         col5, col6 = st.columns(2)
+        st.subheader("Liked Posts by User:")
+        for (user_uuid, profile_name), count in sorted(liked_posts.items(), key=lambda x: x[1], reverse=True):
+            st.write(f"{profile_name} ({user_uuid}): {count}")
+
 
         with col5:
             st.subheader("Likes Percentiles")
@@ -426,4 +446,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()
