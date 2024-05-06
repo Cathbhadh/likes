@@ -78,14 +78,22 @@ def generate_comments_dataframe(user_comments, user_is_follower, notifications):
     return comments_df
 
 
-def count_liked_posts(notifications):
+def fetch_likes_data(session, user_id, offset=0, limit=500, include_nsfw=True):
+    url = f"https://api.yodayo.com/v1/users/{user_id}/likes?offset={offset}&limit={limit}&width=600&include_nsfw={include_nsfw}"
+    response = session.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
+
+def count_liked_posts(likes_data):
     liked_posts = defaultdict(int)
-    for notification in notifications:
-        if notification["action"] == "liked" and notification.get("resource_media"):
-            user_uuid = notification["user_profile"]["uuid"]
-            profile_name = notification["user_profile"]["name"]
-            liked_posts[(user_uuid, profile_name)] += 1
+    for notification in likes_data:
+        user_uuid = notification["user_uuid"]
+        profile_name = notification["profile"]["name"]
+        liked_posts[(user_uuid, profile_name)] += 1
     return liked_posts
+
 
 
 @st.cache_data(ttl=7200)
@@ -274,6 +282,15 @@ def main():
     if access_token and user_id:
         session = authenticate_with_token(access_token)
         followers = get_followers(session, user_id)
+        
+        offset = 0
+        likes_data = []
+        while True:
+            data = fetch_likes_data(session, user_id, offset=offset)
+            if not data:
+                break
+            likes_data.extend(data)
+            offset += 500
         start_time = time.perf_counter()
         (
             user_likes,
